@@ -80,7 +80,7 @@ L4  App target        (depends AppShellUI, MenuBarUI, AppCore, SystemBridge, Per
 | Engine | Domain value types (`Rule`, `RuleSet`, `WindowKey`, `TrackedWindow`, …), port protocols, `TrackerReducer` (events → state), `Planner` (state + rules + time → schedules + actions + next wake), `SuggestionCatalog` (static data + matching). |
 | Presentation | Pure text: time-left / time-ago / pause / rule-summary formatting (ui_design §7), `MenuContentBuilder` (plan + history + flags → `MenuContent` value tree). |
 | Persistence | SwiftData schema (versioned), `Store` (@MainActor; main context), mapping between `@Model` objects and Engine values, FIFO history trimming. |
-| SystemBridge | Live ports: `CGWindowLister`, `AXWindowService` (actor), `FrontmostFocusObserver`, `LiveWorkspaceEvents`, `LiveAccessibilityPermission`, `LiveLoginItem`, `LiveInstalledAppScanner`, `LiveAppOpener`, `LiveAppTerminator`. See system_layer.md. |
+| SystemBridge | Live ports: `CGWindowLister`, `AXWindowService` (actor), `FrontmostFocusObserver`, `LiveWorkspaceEvents`, `LiveAccessibilityPermission`, `LiveLoginItem`, `LiveInstalledAppScanner`, `LiveAppOpener`, `LiveAppTerminator`, `LiveAppScheduler`. See system_layer.md. |
 | AppCore | `@MainActor @Observable final class AppCore`: event pump, tracker state, replanning, executor, deadline timer, pause, permissions state, onboarding completion, dry run, reopen, route. See engine.md. |
 | SharedUI | `AppIconView` (icon by bundle ID, cached), `SuggestionListView` (onboarding step 3 + Settings sheet). |
 | MenuBarUI | `StatusItemController`: owns `NSStatusItem`; `NSMenuDelegate.menuNeedsUpdate` asks `AppCore` for a `MenuContent` and renders it with `MenuRenderer`. |
@@ -281,7 +281,7 @@ There is no periodic focus sampling. Focus time is measured with event timestamp
 | SystemBridge | Pure parsing helpers unit-tested with fixture dictionaries (CG window dict → `ObservedWindow`, AXDocument string → URL). Live AX/CG behavior is covered by the ManualTestApp | Parsing only |
 | App target | Build only (CI app tier) | — |
 
-- **Time:** nothing in `Engine` or `Presentation` reads the clock; `now` is a parameter. `AppCore` gets `AppScheduler` (Biscotti seam: `now() -> Date`, `sleep(until:)`, cancellable timers). `FakeScheduler` advances time by hand.
+- **Time:** nothing in `Engine` or `Presentation` reads the clock; `now` is a parameter. `AppCore` gets `AppScheduler` through `AppCorePorts.scheduler` (a port in `Engine`, live in `SystemBridge`; Biscotti seam: `now() -> Date`, `sleep(until:)`, cancellable timers). `FakeScheduler` advances time by hand.
 - **Fakes** live in `Tests/TestSupport` (a plain target, not a product, since SPM test targets cannot depend on each other). Fakes use a reference-type backing store so tests can mutate the scripted system state (for example, "window 12 disappears now").
 - **No test touches real AX/CG/NSWorkspace.** Tests run in CI on a headless runner with no permissions.
 

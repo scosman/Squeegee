@@ -28,7 +28,7 @@ Action and auto-check closures in the scripts are placeholders. `ManualTestApp/S
 - Bundle ID `net.scosman.windowcleaner.manualtest`. It is not sandboxed and uses hardened runtime.
 - **Signing:** Apple Development (team `B5L5M4B62J`) for `make run-manual-tests`, so the Accessibility grant survives rebuilds. CI builds it ad-hoc (`make build-app`).
 - Its scheme passes `SRCROOT` as an env var. The app writes `$SRCROOT/Results/manual_test_results.json` (Biscotti resolution order: `MANUAL_TEST_RESULTS_PATH`, then `$SRCROOT/Results/…`, then `~/Documents`).
-- **UI:** a `TabView` with one tab per script (`ScriptRunnerView` and `StepView`, as in Biscotti). There is also a **Live Inspector** tab (not recorded): a table of the current `CGWindowLister` output joined with `AXWindowService.inspect` metadata, the frontmost app, the focused window ID, and a log of `FocusSignal` and `WorkspaceEvent` events with timestamps. This is the main debugging view for the system layer.
+- **UI:** a `TabView` with one tab per script (`ScriptRunnerView` and `StepView`, as in Biscotti). There is also a **Live Inspector** tab (not recorded): a table of the current `CGWindowLister` output joined with `AXWindowService.inspect` metadata, the frontmost app, the focused window ID, and a log of `FocusSignal` and `WorkspaceEvent` events with timestamps. This is the main debugging view for the system layer. It has a **Monitor** toggle that runs a small stand-alone loop built only from `SystemBridge` ports: a 60 s `CGWindowLister` scan (stopped while displays sleep), the `FrontmostFocusObserver` moved on each app activation, and an inspect of the previous app on each activation. It has the same shape as the `AppCore` event pump, but no engine logic, so the harness can run before `AppCore` exists (implementation plan Phase 2).
 - It depends on `SystemBridge`, `Engine`, and `ManualTestKit`. It uses the real live ports, never copies.
 
 ## 3. Scripts
@@ -97,7 +97,7 @@ Step ID prefix `sb_` (SystemBridge). **Staleness rule:** any change to `Packages
 | Step | Type | Content |
 |---|---|---|
 | `sb_timer_latency` | action + humanQuestion | Arm 5 one-shot `LiveAppScheduler` timers at +2, +5, +10, +20, and +30 min, then hide the ManualTestApp (Cmd-H) and leave the Mac awake and idle. After 30 min, the tab shows the lateness of each timer. "Were all timers late by less than 60 s?" (If not: the App Nap contingency, architecture.md §11.) |
-| `sb_energy` | humanQuestion | "With the Live Inspector running its engine loop (scan timer + focus observer) and hidden for 10 min, does Activity Monitor → Energy show 'Avg Energy Impact' near 0 and CPU near 0%?" |
+| `sb_energy` | humanQuestion | "With the Live Inspector Monitor on and the app hidden for 10 min (use the Mac normally during this time), does Activity Monitor → Energy show 'Avg Energy Impact' near 0 and CPU near 0%?" |
 | `sb_login_item` | action + humanQuestion | `LiveLoginItem.setEnabled(true)` on the ManualTestApp. "Did it appear in System Settings → General → Login Items? Then disable it: did it go away?" |
 
 ### 3.8 `sb_scan` — Installed apps
@@ -108,4 +108,6 @@ Step ID prefix `sb_` (SystemBridge). **Staleness rule:** any change to `Packages
 
 ## 4. After the hardware pass
 
-The person who runs the tests records the results and notes. The notes of the decision steps (`sb_close_other_space`, `sb_close_tabs`, `sb_document_urls`, `sb_timer_latency`, `sb_focus_events`) are copied into a short `specs/projects/WindowCleaner/hardware_findings.md` in the same PR. If a contingency is triggered (architecture.md §11), it becomes a backlog item.
+The hardware pass is a **checkpoint** between implementation Phase 2 and Phase 3. Nothing after Phase 2 starts until it is done.
+
+The person who runs the tests records the results and notes. The notes of the decision steps (`sb_close_other_space`, `sb_close_tabs`, `sb_document_urls`, `sb_timer_latency`, `sb_focus_events`) are copied into a short `specs/projects/WindowCleaner/hardware_findings.md` in the same PR. If a finding changes the design (for example, the close-on-another-Space behavior, focus events, or document URLs), update engine.md / system_layer.md **before** Phase 3 starts. If a contingency is triggered (architecture.md §11), add it to the plan before Phase 3.

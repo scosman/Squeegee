@@ -256,7 +256,7 @@ public enum PermissionState: Sendable { case granted, denied }
 public enum PauseOption: Sendable, CaseIterable { case oneHour, untilTomorrow, untilResumed }
 public enum MenuBarIconState: Sendable { case normal, paused, permissionMissing }
 
-public init(store: Store, ports: AppCorePorts, scheduler: any AppScheduler,
+public init(store: Store, ports: AppCorePorts,          // ports.scheduler is the clock/timer seam (§6.2)
             catalog: SuggestionCatalog = .builtIn, calendar: Calendar = .current)
 public static func live(store: Store, ports: AppCorePorts) -> AppCore
 
@@ -298,6 +298,8 @@ public func completeOnboarding()                     // settings.onboardingCompl
 
 ### 6.2 `AppScheduler` seam (Biscotti pattern, adapted to wall-clock deadlines)
 
+The protocol is a port: it lives in `Engine/Ports/` with the other ports (system_layer.md §1) and is carried in `AppCorePorts.scheduler`. `LiveAppScheduler` lives in `SystemBridge`, so the ManualTestApp can measure real timer latency (`sb_timer_latency`) before `AppCore` exists.
+
 ```swift
 public protocol AppScheduler: Sendable {
     func now() -> Date
@@ -307,7 +309,7 @@ public protocol AppScheduler: Sendable {
 public protocol Cancellable: Sendable { func cancel() }
 ```
 
-- **`LiveAppScheduler`** uses `DispatchSource.makeTimerSource(queue: .main)`. One-shot timers use `DispatchWallTime` (wall clock, so the deadline stays correct across sleep), with `leeway = tolerance`. Repeating timers use `DispatchTime`.
+- **`LiveAppScheduler`** (`SystemBridge`) uses `DispatchSource.makeTimerSource(queue: .main)`. One-shot timers use `DispatchWallTime` (wall clock, so the deadline stays correct across sleep), with `leeway = tolerance`. Repeating timers use `DispatchTime`.
 - **`FakeScheduler`** (in TestSupport) holds a manual `now`. `advance(to:)` / `advance(by:)` fire the due actions in time order.
 
 ### 6.3 Event pump

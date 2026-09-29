@@ -111,6 +111,13 @@ public protocol AppOpening: Sendable {
     func fileExists(_ url: URL) -> Bool
 }
 
+public protocol AppScheduler: Sendable {                      // clock + timers; see engine.md §6.2
+    func now() -> Date
+    @MainActor func schedule(at date: Date, tolerance: TimeInterval, _ action: @escaping @MainActor () -> Void) -> any Cancellable
+    @MainActor func schedule(every interval: TimeInterval, tolerance: TimeInterval, _ action: @escaping @MainActor () -> Void) -> any Cancellable
+}
+public protocol Cancellable: Sendable { func cancel() }
+
 public struct AppCorePorts: Sendable {                         // one bag, passed to AppCore
     public var windowLister: any WindowListing
     public var windowInspector: any WindowInspecting
@@ -122,6 +129,7 @@ public struct AppCorePorts: Sendable {                         // one bag, passe
     public var loginItem: any LoginItemPort
     public var installedApps: any InstalledAppScanning
     public var opener: any AppOpening
+    public var scheduler: any AppScheduler
 }
 ```
 
@@ -266,6 +274,7 @@ This is not a documented notification. It is verified by the ManualTestApp (`sb_
   - `open(documentURL:withBundleID:)` → `NSWorkspace.shared.open([url], withApplicationAt: appURL(for: bundleID), configuration: .init())`. `configuration.activates = true`. For Finder, this opens the folder in a new Finder window.
   - `launch(bundleID:)` → `openApplication(at:configuration:)`.
   - `fileExists` → `FileManager.default.fileExists(atPath: url.path)`.
+- **`LiveAppScheduler`:** implements `AppScheduler` with `DispatchSource` timers on the main queue (details in engine.md §6.2).
 - **`LiveAppTerminator`:** `NSRunningApplication(processIdentifier:)?.terminate() ?? false`. It never calls `forceTerminate()`.
 
 ## 8. Energy budget (steady state, displays awake)
