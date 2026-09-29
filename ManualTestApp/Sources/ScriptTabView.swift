@@ -1,7 +1,8 @@
 import ManualTestKit
 import SwiftUI
 
-/// Root view: one tab per test script from ManualTestKit's `allScripts` registry.
+/// Root view: one tab per test script from ManualTestKit's `allScripts` registry,
+/// plus a Live Inspector tab for real-time system debugging.
 struct ScriptTabView: View {
     private let wiredScripts: [TestScript]
     private let resultsStore: ResultsStore
@@ -14,6 +15,12 @@ struct ScriptTabView: View {
 
     var body: some View {
         TabView {
+            LiveInspectorView()
+                .tabItem {
+                    Text("Live Inspector")
+                }
+                .tag("live_inspector")
+
             ForEach(wiredScripts) { script in
                 ScriptRunnerView(script: script, store: resultsStore)
                     .tabItem {
