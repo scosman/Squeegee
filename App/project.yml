@@ -1,0 +1,67 @@
+name: WindowCleaner
+options:
+  bundleIdPrefix: net.scosman
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    CLANG_TREAT_WARNINGS_AS_ERRORS: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    OTHER_SWIFT_FLAGS: "$(inherited) -warnings-as-errors"
+    CODE_SIGN_STYLE: Manual
+    INFOPLIST_KEY_CFBundleDisplayName: "WindowCleaner"
+    ENABLE_HARDENED_RUNTIME: YES
+  configs:
+    Debug:
+      CODE_SIGN_IDENTITY: "Apple Development"
+      DEVELOPMENT_TEAM: B5L5M4B62J
+    Release:
+      CODE_SIGN_IDENTITY: "Developer ID Application"
+      DEVELOPMENT_TEAM: B5L5M4B62J
+
+packages:
+  WindowCleanerKit:
+    path: ../Packages/WindowCleanerKit
+
+targets:
+  WindowCleaner:
+    type: application
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - Sources
+      - Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.scosman.windowcleaner
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        CODE_SIGN_ENTITLEMENTS: WindowCleaner.entitlements
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+    dependencies:
+      - package: WindowCleanerKit
+        product: AppShellUI
+      - package: WindowCleanerKit
+        product: AppCore
+      - package: WindowCleanerKit
+        product: MenuBarUI
+      - package: WindowCleanerKit
+        product: SystemBridge
+      - package: WindowCleanerKit
+        product: Persistence
+
+schemes:
+  WindowCleaner:
+    build:
+      targets:
+        WindowCleaner: all
+    run:
+      config: Debug
+    test:
+      config: Debug

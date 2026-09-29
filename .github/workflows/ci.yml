@@ -1,0 +1,63 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Pin Xcode 26.3 — the macos-15 runner defaults to Xcode 16.4, whose SwiftData
+# SDK lacks Schema.Version: Sendable, breaking swift test/xcodebuild under Swift 6.
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+
+jobs:
+  package-tier:
+    name: Packages (lint + test)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Xcode version
+        run: xcodebuild -version
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            ~/Library/Caches/Homebrew/downloads
+          key: brew-${{ hashFiles('Brewfile') }}
+          restore-keys: brew-
+      - name: Install dev tools
+        run: brew bundle --file=Brewfile
+      - name: Cache SPM
+        uses: actions/cache@v4
+        with:
+          path: Packages/WindowCleanerKit/.build
+          key: spm-${{ hashFiles('Packages/WindowCleanerKit/Package.swift') }}
+          restore-keys: spm-
+      - name: Cache pinned tools (SwiftLint + SwiftFormat)
+        uses: actions/cache@v4
+        with:
+          path: .tools
+          key: tools-${{ hashFiles('Makefile') }}
+          restore-keys: tools-
+      - name: Lint + test + build
+        run: make ci
+
+  manual-tests-check:
+    name: Manual tests check
+    runs-on: macos-15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check manual test results
+        run: make manual-tests-check
+
+  app-tier:
+    name: App build (xcodebuild)
+    runs-on: macos-15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dev tools
+        run: brew install xcodegen
+      - name: Generate + build app
+        run: make build-app

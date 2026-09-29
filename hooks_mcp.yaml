@@ -1,0 +1,48 @@
+server_name: "WindowCleaner"
+server_description: "WindowCleaner dev commands — thin wrappers over the Makefile."
+
+actions:
+  - name: "bootstrap"
+    description: "Install dev tools via Homebrew (brew bundle)"
+    command: "bash -c 'set -o pipefail; make bootstrap 2>&1 | tail -n 400'"
+    timeout: 300
+
+  - name: "generate"
+    description: "Generate Xcode projects from project.yml files"
+    command: "bash -c 'set -o pipefail; make generate 2>&1 | tail -n 400'"
+    timeout: 300
+
+  - name: "build"
+    description: "Build the SPM package"
+    command: "bash -c 'set -o pipefail; make build 2>&1 | tail -n 400'"
+    timeout: 300
+
+  - name: "test"
+    description: "Gating: run the package test suite (swift test)"
+    command: "bash -c 'set -o pipefail; make test 2>&1 | tail -n 400'"
+    timeout: 300
+
+  - name: "lint"
+    description: "Check formatting + lint (non-mutating)"
+    command: "bash -c 'set -o pipefail; make lint 2>&1 | tail -n 400'"
+    timeout: 300
+
+  - name: "format"
+    description: "Auto-format and autofix lint"
+    command: "bash -c 'set -o pipefail; make format 2>&1 | tail -n 400'"
+    timeout: 300
+
+  - name: "precommit_checks"
+    description: "Run the pre-commit checks (format + lint + test). Required before a --no-verify commit."
+    command: "bash -c 'set -o pipefail; make precommit-checks 2>&1 | tail -n 400'"
+    timeout: 300
+
+  - name: "build_app"
+    description: "Non-gating: generate project + build the app (xcodebuild)"
+    command: "bash -c 'set -o pipefail; make build-app 2>&1 | tail -n 400'"
+    timeout: 300
+
+  - name: "manual_tests_check"
+    description: "Check that all manual test step IDs have been run"
+    command: "bash -c 'set -o pipefail; make manual-tests-check 2>&1 | tail -n 400'"
+    timeout: 300

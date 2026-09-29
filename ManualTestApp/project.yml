@@ -1,0 +1,66 @@
+name: ManualTestApp
+options:
+  bundleIdPrefix: net.scosman.windowcleaner
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    CLANG_TREAT_WARNINGS_AS_ERRORS: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    OTHER_SWIFT_FLAGS: "$(inherited) -warnings-as-errors"
+    CODE_SIGN_STYLE: Manual
+    ENABLE_HARDENED_RUNTIME: YES
+  configs:
+    Debug:
+      CODE_SIGN_IDENTITY: "Apple Development"
+      DEVELOPMENT_TEAM: B5L5M4B62J
+    Release:
+      CODE_SIGN_IDENTITY: "-"
+      DEVELOPMENT_TEAM: ""
+
+packages:
+  WindowCleanerKit:
+    path: ../Packages/WindowCleanerKit
+
+targets:
+  ManualTestApp:
+    type: application
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - Sources
+      - Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.scosman.windowcleaner.manualtest
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        CODE_SIGN_ENTITLEMENTS: ManualTestApp.entitlements
+        MARKETING_VERSION: "0.0.1"
+        CURRENT_PROJECT_VERSION: "1"
+    dependencies:
+      - package: WindowCleanerKit
+        product: ManualTestKit
+      - package: WindowCleanerKit
+        product: SystemBridge
+      - package: WindowCleanerKit
+        product: Engine
+
+schemes:
+  ManualTestApp:
+    build:
+      targets:
+        ManualTestApp: all
+    run:
+      config: Debug
+      environmentVariables:
+        - variable: SRCROOT
+          value: $(SRCROOT)
+          isEnabled: true
+    test:
+      config: Debug
