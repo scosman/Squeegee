@@ -1,5 +1,1 @@
-import Testing
-
-@Test func appCoreModuleLoads() {
-    // Placeholder — replaced in Phase 5
-}
+// AppCoreTests — scenario tests are in AppCoreScenarioTests.swift
