@@ -239,25 +239,28 @@ public enum MenuContentBuilder {
     private static func buildFooterSection(input: MenuContentInput) -> MenuSection {
         var items: [MenuItem] = []
 
-        // Pause submenu items (rendered as a submenu by MenuRenderer)
-        items.append(MenuItem(
-            title: "For 1 Hour",
-            action: .pauseOneHour,
-            isChecked: input.pauseMode == .untilDate(.oneHour)
-        ))
-        items.append(MenuItem(
-            title: "Until Tomorrow",
-            action: .pauseUntilTomorrow,
-            isChecked: input.pauseMode == .untilDate(.untilTomorrow)
-        ))
-        items.append(MenuItem(
-            title: "Until Resumed",
-            action: .pauseUntilResumed,
-            isChecked: input.pauseMode == .untilResumed
-        ))
+        // Pause submenu (ui_design section 3.2: "Pause ▸" with three options)
+        let pauseChildren = [
+            MenuItem(
+                title: "For 1 Hour",
+                action: .pauseOneHour,
+                isChecked: input.pauseMode == .untilDate(.oneHour)
+            ),
+            MenuItem(
+                title: "Until Tomorrow",
+                action: .pauseUntilTomorrow,
+                isChecked: input.pauseMode == .untilDate(.untilTomorrow)
+            ),
+            MenuItem(
+                title: "Until Resumed",
+                action: .pauseUntilResumed,
+                isChecked: input.pauseMode == .untilResumed
+            )
+        ]
+        items.append(MenuItem(title: "Pause", submenu: pauseChildren))
 
-        items.append(MenuItem(title: "Settings\u{2026}", action: .openSettings))
-        items.append(MenuItem(title: "Quit WindowCleaner", action: .quit))
+        items.append(MenuItem(title: "Settings\u{2026}", action: .openSettings, keyEquivalent: ","))
+        items.append(MenuItem(title: "Quit WindowCleaner", action: .quit, keyEquivalent: "q"))
 
         return MenuSection(items: items)
     }

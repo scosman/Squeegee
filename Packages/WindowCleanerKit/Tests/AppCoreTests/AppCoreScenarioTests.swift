@@ -643,9 +643,11 @@ struct AppCoreScenarioTests {
         #expect(core.isPaused)
 
         let menu = core.menuContent()
-        // The menu should show the untilTomorrow checkmark, not oneHour
-        let tomorrowItem = menu.sections.flatMap(\.items).first { $0.action == .pauseUntilTomorrow }
-        let oneHourItem = menu.sections.flatMap(\.items).first { $0.action == .pauseOneHour }
+        // Pause options are inside a "Pause" submenu in the footer section
+        let pauseItem = menu.sections.flatMap(\.items).first { $0.title == "Pause" }
+        let pauseChildren = try #require(pauseItem?.submenu)
+        let tomorrowItem = pauseChildren.first { $0.action == .pauseUntilTomorrow }
+        let oneHourItem = pauseChildren.first { $0.action == .pauseOneHour }
         #expect(tomorrowItem?.isChecked == true,
                 "Until Tomorrow should be checked when pause(.untilTomorrow) was called")
         #expect(oneHourItem?.isChecked == false,

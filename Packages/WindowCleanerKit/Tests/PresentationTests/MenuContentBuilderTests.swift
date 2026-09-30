@@ -3,62 +3,65 @@ import Foundation
 import Presentation
 import Testing
 
-@Suite("MenuContentBuilder")
-struct MenuContentBuilderTests {
-    private let now = Date(timeIntervalSinceReferenceDate: 700_000_000)
-    private let calendar: Calendar = {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "America/New_York")! // swiftlint:disable:this force_unwrapping
-        cal.locale = Locale(identifier: "en_US_POSIX")
-        return cal
-    }()
+// Shared helpers for MenuContentBuilder tests
+private let testNow = Date(timeIntervalSinceReferenceDate: 700_000_000)
+private let testCalendar: Calendar = {
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = TimeZone(identifier: "America/New_York")! // swiftlint:disable:this force_unwrapping
+    cal.locale = Locale(identifier: "en_US_POSIX")
+    return cal
+}()
 
-    private func defaultInput(
-        schedules: [WindowSchedule] = [],
-        closures: [ClosureValue] = [],
-        fileExistsByURL: [URL: Bool] = [:],
-        isPaused: Bool = false,
-        pauseMode: PauseMode = .none,
-        pausedUntil: Date? = nil,
-        hasPermission: Bool = true
-    ) -> MenuContentInput {
-        MenuContentInput(
-            schedules: schedules,
-            recentClosures: closures,
-            fileExistsByURL: fileExistsByURL,
-            isPaused: isPaused,
-            pauseMode: pauseMode,
-            pausedUntil: pausedUntil,
-            hasPermission: hasPermission,
-            now: now,
-            calendar: calendar
-        )
-    }
+private func defaultInput(
+    schedules: [WindowSchedule] = [],
+    closures: [ClosureValue] = [],
+    fileExistsByURL: [URL: Bool] = [:],
+    isPaused: Bool = false,
+    pauseMode: PauseMode = .none,
+    pausedUntil: Date? = nil,
+    hasPermission: Bool = true
+) -> MenuContentInput {
+    MenuContentInput(
+        schedules: schedules,
+        recentClosures: closures,
+        fileExistsByURL: fileExistsByURL,
+        isPaused: isPaused,
+        pauseMode: pauseMode,
+        pausedUntil: pausedUntil,
+        hasPermission: hasPermission,
+        now: testNow,
+        calendar: testCalendar
+    )
+}
 
-    private func makeSchedule(
-        bundleID: String = "com.test.app",
-        appName: String = "TestApp",
-        title: String? = "Window",
-        status: ScheduleStatus = .scheduled,
-        deadline: Date? = nil
-    ) -> WindowSchedule {
-        WindowSchedule(
-            key: WindowKey(pid: 100, windowID: UInt32.random(in: 1 ... 10000)),
-            bundleID: bundleID,
-            appName: appName,
-            title: title,
-            ruleSource: .app,
-            deadline: deadline ?? now.addingTimeInterval(3600),
-            status: status
-        )
-    }
+private func makeSchedule(
+    bundleID: String = "com.test.app",
+    appName: String = "TestApp",
+    title: String? = "Window",
+    status: ScheduleStatus = .scheduled,
+    deadline: Date? = nil
+) -> WindowSchedule {
+    WindowSchedule(
+        key: WindowKey(pid: 100, windowID: UInt32.random(in: 1 ... 10000)),
+        bundleID: bundleID,
+        appName: appName,
+        title: title,
+        ruleSource: .app,
+        deadline: deadline ?? testNow.addingTimeInterval(3600),
+        status: status
+    )
+}
 
+// MARK: - Up Next & Recently Closed
+
+@Suite("MenuContentBuilder — Sections")
+struct MenuContentBuilderSectionTests {
     // MARK: - Up Next
 
     @Test func upNextWithSchedules() throws {
         let schedules = [
-            makeSchedule(appName: "Finder", title: "Downloads", deadline: now.addingTimeInterval(2 * 3600 + 10 * 60)),
-            makeSchedule(appName: "QuickTime", title: "trailer.mov", deadline: now.addingTimeInterval(3 * 3600 + 5 * 60))
+            makeSchedule(appName: "Finder", title: "Downloads", deadline: testNow.addingTimeInterval(2 * 3600 + 10 * 60)),
+            makeSchedule(appName: "QuickTime", title: "trailer.mov", deadline: testNow.addingTimeInterval(3 * 3600 + 5 * 60))
         ]
         let content = MenuContentBuilder.build(input: defaultInput(schedules: schedules))
         let upNext = try #require(content.sections.first(where: { $0.header == "Up Next" }))
@@ -79,7 +82,7 @@ struct MenuContentBuilderTests {
 
     @Test func upNextMoreThanEight() throws {
         let schedules = (0 ..< 10).map { idx in
-            makeSchedule(appName: "App\(idx)", title: "W\(idx)", deadline: now.addingTimeInterval(TimeInterval(idx) * 60 + 60))
+            makeSchedule(appName: "App\(idx)", title: "W\(idx)", deadline: testNow.addingTimeInterval(TimeInterval(idx) * 60 + 60))
         }
         let content = MenuContentBuilder.build(input: defaultInput(schedules: schedules))
         let upNext = try #require(content.sections.first(where: { $0.header == "Up Next" }))
@@ -121,7 +124,7 @@ struct MenuContentBuilderTests {
         let closure = ClosureValue(
             bundleID: "com.apple.Preview", appName: "Preview",
             windowTitle: "Report.pdf", documentURL: url,
-            kind: .windowClosed, closedAt: now.addingTimeInterval(-20 * 60)
+            kind: .windowClosed, closedAt: testNow.addingTimeInterval(-20 * 60)
         )
         let content = MenuContentBuilder.build(input: defaultInput(
             closures: [closure], fileExistsByURL: [url: true]
@@ -138,7 +141,7 @@ struct MenuContentBuilderTests {
         let closure = ClosureValue(
             bundleID: "com.apple.Preview", appName: "Preview",
             windowTitle: "Gone.pdf", documentURL: url,
-            kind: .windowClosed, closedAt: now.addingTimeInterval(-60)
+            kind: .windowClosed, closedAt: testNow.addingTimeInterval(-60)
         )
         let content = MenuContentBuilder.build(input: defaultInput(
             closures: [closure], fileExistsByURL: [url: false]
@@ -152,7 +155,7 @@ struct MenuContentBuilderTests {
         let closure = ClosureValue(
             bundleID: "com.apple.finder", appName: "Finder",
             windowTitle: "Downloads", documentURL: nil,
-            kind: .windowClosed, closedAt: now.addingTimeInterval(-3600)
+            kind: .windowClosed, closedAt: testNow.addingTimeInterval(-3600)
         )
         let content = MenuContentBuilder.build(input: defaultInput(closures: [closure]))
         let section = try #require(content.sections.first(where: { $0.header == "Recently Closed" }))
@@ -164,7 +167,7 @@ struct MenuContentBuilderTests {
         let closure = ClosureValue(
             bundleID: "com.apple.QuickTimePlayerX", appName: "QuickTime Player",
             windowTitle: nil, documentURL: nil,
-            kind: .appQuit, closedAt: now.addingTimeInterval(-2 * 3600)
+            kind: .appQuit, closedAt: testNow.addingTimeInterval(-2 * 3600)
         )
         let content = MenuContentBuilder.build(input: defaultInput(closures: [closure]))
         let section = try #require(content.sections.first(where: { $0.header == "Recently Closed" }))
@@ -178,7 +181,12 @@ struct MenuContentBuilderTests {
         #expect(section.items[0].title == "Nothing closed yet")
         #expect(section.items[0].isEnabled == false)
     }
+}
 
+// MARK: - Banners & Footer
+
+@Suite("MenuContentBuilder — Banners and Footer")
+struct MenuContentBuilderBannerFooterTests {
     // MARK: - Permission missing
 
     @Test func permissionMissingBanner() {
@@ -201,7 +209,7 @@ struct MenuContentBuilderTests {
     // MARK: - Paused
 
     @Test func pausedBanner() {
-        let until = now.addingTimeInterval(3600)
+        let until = testNow.addingTimeInterval(3600)
         let content = MenuContentBuilder.build(input: defaultInput(
             isPaused: true, pauseMode: .untilDate(.oneHour), pausedUntil: until
         ))
@@ -226,15 +234,35 @@ struct MenuContentBuilderTests {
 
     // MARK: - Footer
 
-    @Test func footerContainsPauseOptionsAndSettings() throws {
+    @Test func footerContainsPauseSubmenuAndSettings() throws {
         let content = MenuContentBuilder.build(input: defaultInput())
         let footer = try #require(content.sections.last)
         let titles = footer.items.map(\.title)
-        #expect(titles.contains("For 1 Hour"))
-        #expect(titles.contains("Until Tomorrow"))
-        #expect(titles.contains("Until Resumed"))
+        #expect(titles.contains("Pause"))
         #expect(titles.contains("Settings\u{2026}"))
         #expect(titles.contains("Quit WindowCleaner"))
+        // Pause options are inside the submenu, not flat
+        #expect(!titles.contains("For 1 Hour"))
+    }
+
+    @Test func footerPauseSubmenuHasThreeOptions() throws {
+        let content = MenuContentBuilder.build(input: defaultInput())
+        let footer = try #require(content.sections.last)
+        let pause = try #require(footer.items.first(where: { $0.title == "Pause" }))
+        let children = try #require(pause.submenu)
+        #expect(children.count == 3)
+        #expect(children[0].title == "For 1 Hour")
+        #expect(children[1].title == "Until Tomorrow")
+        #expect(children[2].title == "Until Resumed")
+    }
+
+    @Test func footerKeyEquivalents() throws {
+        let content = MenuContentBuilder.build(input: defaultInput())
+        let footer = try #require(content.sections.last)
+        let settings = try #require(footer.items.first(where: { $0.title == "Settings\u{2026}" }))
+        #expect(settings.keyEquivalent == ",")
+        let quit = try #require(footer.items.first(where: { $0.title == "Quit WindowCleaner" }))
+        #expect(quit.keyEquivalent == "q")
     }
 
     @Test func footerPauseCheckedWhenUntilResumed() throws {
@@ -242,37 +270,43 @@ struct MenuContentBuilderTests {
             isPaused: true, pauseMode: .untilResumed, pausedUntil: nil
         ))
         let footer = try #require(content.sections.last)
-        let untilResumed = footer.items.first(where: { $0.title == "Until Resumed" })
+        let pause = try #require(footer.items.first(where: { $0.title == "Pause" }))
+        let children = try #require(pause.submenu)
+        let untilResumed = children.first(where: { $0.title == "Until Resumed" })
         #expect(untilResumed?.isChecked == true)
-        let forOneHour = footer.items.first(where: { $0.title == "For 1 Hour" })
+        let forOneHour = children.first(where: { $0.title == "For 1 Hour" })
         #expect(forOneHour?.isChecked == false)
-        let untilTomorrow = footer.items.first(where: { $0.title == "Until Tomorrow" })
+        let untilTomorrow = children.first(where: { $0.title == "Until Tomorrow" })
         #expect(untilTomorrow?.isChecked == false)
     }
 
     @Test func footerPauseCheckedWhenOneHour() throws {
         let content = MenuContentBuilder.build(input: defaultInput(
-            isPaused: true, pauseMode: .untilDate(.oneHour), pausedUntil: now.addingTimeInterval(3600)
+            isPaused: true, pauseMode: .untilDate(.oneHour), pausedUntil: testNow.addingTimeInterval(3600)
         ))
         let footer = try #require(content.sections.last)
-        let forOneHour = footer.items.first(where: { $0.title == "For 1 Hour" })
+        let pause = try #require(footer.items.first(where: { $0.title == "Pause" }))
+        let children = try #require(pause.submenu)
+        let forOneHour = children.first(where: { $0.title == "For 1 Hour" })
         #expect(forOneHour?.isChecked == true)
-        let untilTomorrow = footer.items.first(where: { $0.title == "Until Tomorrow" })
+        let untilTomorrow = children.first(where: { $0.title == "Until Tomorrow" })
         #expect(untilTomorrow?.isChecked == false)
-        let untilResumed = footer.items.first(where: { $0.title == "Until Resumed" })
+        let untilResumed = children.first(where: { $0.title == "Until Resumed" })
         #expect(untilResumed?.isChecked == false)
     }
 
     @Test func footerPauseCheckedWhenUntilTomorrow() throws {
         let content = MenuContentBuilder.build(input: defaultInput(
-            isPaused: true, pauseMode: .untilDate(.untilTomorrow), pausedUntil: now.addingTimeInterval(12 * 3600)
+            isPaused: true, pauseMode: .untilDate(.untilTomorrow), pausedUntil: testNow.addingTimeInterval(12 * 3600)
         ))
         let footer = try #require(content.sections.last)
-        let untilTomorrow = footer.items.first(where: { $0.title == "Until Tomorrow" })
+        let pause = try #require(footer.items.first(where: { $0.title == "Pause" }))
+        let children = try #require(pause.submenu)
+        let untilTomorrow = children.first(where: { $0.title == "Until Tomorrow" })
         #expect(untilTomorrow?.isChecked == true)
-        let forOneHour = footer.items.first(where: { $0.title == "For 1 Hour" })
+        let forOneHour = children.first(where: { $0.title == "For 1 Hour" })
         #expect(forOneHour?.isChecked == false)
-        let untilResumed = footer.items.first(where: { $0.title == "Until Resumed" })
+        let untilResumed = children.first(where: { $0.title == "Until Resumed" })
         #expect(untilResumed?.isChecked == false)
     }
 }

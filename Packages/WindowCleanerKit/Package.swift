@@ -90,6 +90,11 @@ let package = Package(
             dependencies: ["Presentation", "AppCore"],
             swiftSettings: warningsAsErrors
         ),
+        .testTarget(
+            name: "MenuBarUITests",
+            dependencies: ["MenuBarUI", "Presentation"],
+            swiftSettings: warningsAsErrors
+        ),
 
         // L3: OnboardingUI (SwiftUI; depends SharedUI, AppCore)
         .target(

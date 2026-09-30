@@ -34,6 +34,10 @@ public struct MenuItem: Sendable, Equatable {
     public let isEnabled: Bool
     /// Whether this item shows a checkmark.
     public let isChecked: Bool
+    /// When non-nil, the renderer creates a submenu with these items.
+    public let submenu: [MenuItem]?
+    /// Keyboard shortcut character (e.g. "," for Cmd+,).
+    public let keyEquivalent: String?
 
     public init(
         title: String,
@@ -42,7 +46,9 @@ public struct MenuItem: Sendable, Equatable {
         action: MenuAction? = nil,
         tooltip: String? = nil,
         isEnabled: Bool = true,
-        isChecked: Bool = false
+        isChecked: Bool = false,
+        submenu: [MenuItem]? = nil,
+        keyEquivalent: String? = nil
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -51,6 +57,8 @@ public struct MenuItem: Sendable, Equatable {
         self.tooltip = tooltip
         self.isEnabled = isEnabled
         self.isChecked = isChecked
+        self.submenu = submenu
+        self.keyEquivalent = keyEquivalent
     }
 }
 

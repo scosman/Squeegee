@@ -1,6 +1,7 @@
 import AppCore
 import AppKit
 import AppShellUI
+import MenuBarUI
 import OSLog
 import Persistence
 import SystemBridge
@@ -15,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let launchState = LaunchState()
 
     private var core: AppCore?
+    private var statusItemController: StatusItemController?
     private var windowObserver: NSObjectProtocol?
 
     // MARK: - Lifecycle
@@ -48,6 +50,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appCore.showMainWindow = { [weak self] in
             self?.showMainWindow()
         }
+
+        // Create the status item controller (menu bar icon)
+        statusItemController = StatusItemController(core: appCore)
 
         // Give AppShellUI access to the core
         launchState.core = appCore
