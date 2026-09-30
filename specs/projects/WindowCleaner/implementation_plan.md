@@ -19,5 +19,5 @@ Risk goes first. Phases 1–2 build only what the hardware validation needs. The
 - [x] Phase 6: App shell and Settings. Composition root, window/route/activation-policy handling, reopen-to-settings, login item; `SharedUI`, `SettingsUI` (sidebar, General, Rule page with Open Windows, add-app menu, Suggestions sheet), `AppShellUI`. This is the first runnable end-to-end app.
 - [x] Phase 7: Menu bar. `MenuBarUI` (`StatusItemController`, `MenuRenderer`, icon states, hide-icon toggle), with renderer tests.
 - [x] Phase 8: Onboarding. `OnboardingUI` (scaffold, progress header, footer, 4 screens, permission row), first-launch flow, and view model tests.
-- [ ] Phase 9: Release. `scripts/release.sh` + `make release` (Developer ID archive, notarize, staple, DMG), README, and final `CLAUDE.md` updates.
+- [x] Phase 9: Release. `scripts/release.sh` + `make release` (Developer ID archive, notarize, staple, DMG), README, and final `CLAUDE.md` updates.
 - [ ] **Phase 10: Backlog.** Review open backlog items with the user, then close or dismiss each through the standard phase flow.

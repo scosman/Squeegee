@@ -25,7 +25,7 @@ SWIFTFORMAT_SHA256  := b990400779aceb7d7020796eb9ba814d4480543f671d38fc0ff48cb72
 SWIFTFORMAT_DIR := $(TOOLS_DIR)/swiftformat-$(SWIFTFORMAT_VERSION)
 SWIFTFORMAT := $(SWIFTFORMAT_DIR)/swiftformat
 
-.PHONY: help bootstrap generate build test lint format precommit-checks build-app run-app run-manual-tests hooks ci manual-tests-check clean
+.PHONY: help bootstrap generate build test lint format precommit-checks build-app run-app run-manual-tests hooks ci manual-tests-check release clean
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -122,8 +122,11 @@ ci: lint test build ## What the gating CI job runs
 manual-tests-check: ## Check that all manual test step IDs have been run
 	swift run --package-path $(PACKAGE) manual-tests-check ManualTestApp/Results/manual_test_results.json
 
+release: generate ## Archive, notarize, staple, and package a release DMG
+	scripts/release.sh
+
 clean: ## Remove build artifacts + generated projects
-	rm -rf .build $(PACKAGE)/.build
+	rm -rf .build $(PACKAGE)/.build build
 	rm -rf App/WindowCleaner.xcodeproj ManualTestApp/ManualTestApp.xcodeproj
 	rm -rf ~/Library/Developer/Xcode/DerivedData/WindowCleaner-*
 	rm -rf ~/Library/Developer/Xcode/DerivedData/ManualTestApp-*
