@@ -38,7 +38,13 @@ struct StepView: View {
                 case let .autoCheck(id, label, check):
                     autoCheckView(id: id, label: label, check: check)
                 }
+
+                recordedInfo
             }
+        }
+        .onAppear { noteText = result?.note ?? "" }
+        .onChange(of: result) { _, newResult in
+            noteText = newResult?.note ?? ""
         }
     }
 
@@ -92,6 +98,7 @@ struct StepView: View {
         TextField("Optional note", text: $noteText)
             .textFieldStyle(.roundedBorder)
             .frame(maxWidth: 400)
+            .onSubmit { saveNoteIfNeeded() }
 
         HStack(spacing: 12) {
             Button("Yes (Pass)") {
@@ -99,6 +106,12 @@ struct StepView: View {
             }
             Button("No (Fail)") {
                 recordHuman(id: id, status: .fail)
+            }
+
+            if hasUnsavedNote {
+                Text("Press Return to save note")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
             }
         }
     }
@@ -142,6 +155,37 @@ struct StepView: View {
         }
     }
 
+    // MARK: - Recorded result info
+
+    /// Shows the saved note and timestamp for any step that has a recorded result.
+    /// For humanQuestion steps the note field already serves as the note display,
+    /// so only the timestamp is shown. For other step types the note text is shown
+    /// read-only.
+    @ViewBuilder
+    private var recordedInfo: some View {
+        if let result, result.status != .notRun {
+            VStack(alignment: .leading, spacing: 2) {
+                if !step.isHumanQuestion, let note = result.note, !note.isEmpty {
+                    HStack(alignment: .top, spacing: 4) {
+                        Text("Note:")
+                            .font(.caption.bold())
+                            .foregroundStyle(.secondary)
+                        Text(note)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                }
+
+                if let timestamp = result.timestamp {
+                    Text("Recorded \(timestamp.formatted(date: .abbreviated, time: .standard))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        }
+    }
+
     // MARK: - Status badge
 
     @ViewBuilder
@@ -157,6 +201,28 @@ struct StepView: View {
             Image(systemName: "circle")
                 .foregroundStyle(.secondary)
         }
+    }
+
+    // MARK: - Note helpers
+
+    /// True when the note field has been edited but not yet saved.
+    private var hasUnsavedNote: Bool {
+        guard let existing = result, existing.status != .notRun else { return false }
+        let current = noteText.isEmpty ? nil : noteText
+        return current != existing.note
+    }
+
+    /// Persists the current note text with the existing status and timestamp.
+    private func saveNoteIfNeeded() {
+        guard let existing = result, existing.status != .notRun else { return }
+        let note = noteText.isEmpty ? nil : noteText
+        guard note != existing.note else { return }
+        onResult(TestResult(
+            stepID: existing.stepID,
+            status: existing.status,
+            note: note,
+            timestamp: existing.timestamp
+        ))
     }
 
     // MARK: - Actions
@@ -200,5 +266,14 @@ struct StepView: View {
     private func recordHuman(id: String, status: TestStatus) {
         let note = noteText.isEmpty ? nil : noteText
         onResult(TestResult(stepID: id, status: status, note: note, timestamp: .now))
+    }
+}
+
+// MARK: - TestStep convenience
+
+private extension TestStep {
+    var isHumanQuestion: Bool {
+        if case .humanQuestion = self { return true }
+        return false
     }
 }
