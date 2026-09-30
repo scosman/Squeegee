@@ -8,11 +8,10 @@ struct LiveInspectorView: View {
     @State private var monitor = MonitorLoop()
     @State private var selectedWindowKey: WindowKey?
 
-    private static let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss.SSS"
-        return formatter
-    }()
+    private static let intervalOptions: [(label: String, seconds: TimeInterval)] = [
+        ("1 s", 1),
+        ("60 s", 60)
+    ]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +24,17 @@ struct LiveInspectorView: View {
                     }
                 ))
                 .toggleStyle(.switch)
+
+                Picker("Scan", selection: Binding(
+                    get: { monitor.scanIntervalSeconds },
+                    set: { monitor.scanIntervalSeconds = $0 }
+                )) {
+                    ForEach(Self.intervalOptions, id: \.seconds) { option in
+                        Text(option.label).tag(option.seconds)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 100)
 
                 Spacer()
 
@@ -135,12 +145,6 @@ struct LiveInspectorView: View {
 
             windowRowBadges(row)
 
-            if row.isOnScreen {
-                Text("onScreen")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
             Spacer()
 
             if row.key == selectedWindowKey {
@@ -175,30 +179,37 @@ struct LiveInspectorView: View {
     }
 
     private func windowRowDetail(_ row: WindowRow) -> some View {
-        HStack {
-            if let meta = row.metadata {
-                if let title = meta.title {
-                    Text(title)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                if let meta = row.metadata {
+                    if let title = meta.title {
+                        Text(title)
+                            .font(.caption)
+                            .lineLimit(1)
+                    }
+                } else {
+                    Text("(no AX metadata)")
                         .font(.caption)
-                        .lineLimit(1)
+                        .foregroundStyle(.secondary)
                 }
-                if let url = meta.documentURL {
-                    Text(url.path)
-                        .font(.caption)
-                        .foregroundStyle(.blue)
-                        .lineLimit(1)
-                }
-            } else {
-                Text("(no AX metadata)")
+
+                Spacer()
+
+                Text("\(Int(row.bounds.width))x\(Int(row.bounds.height))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                Text(row.isOnScreen ? "on-screen" : "off-screen")
+                    .font(.caption)
+                    .foregroundStyle(row.isOnScreen ? .green : .orange)
             }
 
-            Spacer()
-
-            Text("\(Int(row.bounds.width))x\(Int(row.bounds.height))")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if let meta = row.metadata, let url = meta.documentURL {
+                Text(url.path)
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+                    .lineLimit(1)
+            }
         }
     }
 
@@ -223,6 +234,14 @@ struct LiveInspectorView: View {
 
                     Button("Close") {
                         Task { _ = await monitor.closeWindow(key) }
+                    }
+
+                    Button("Close in 5 s") {
+                        let target = key
+                        Task {
+                            try? await Task.sleep(for: .seconds(5))
+                            _ = await monitor.closeWindow(target)
+                        }
                     }
 
                     if !monitor.capturedCloses.isEmpty {
@@ -251,6 +270,22 @@ struct LiveInspectorView: View {
     // MARK: - Event log
 
     private var eventLog: some View {
+        EventLogView(monitor: monitor)
+    }
+}
+
+// MARK: - Event log (extracted to stay under type_body_length)
+
+private struct EventLogView: View {
+    let monitor: MonitorLoop
+
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss.SSS"
+        return formatter
+    }()
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Event Log (\(monitor.logEntries.count))")

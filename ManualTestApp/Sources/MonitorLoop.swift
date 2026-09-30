@@ -32,7 +32,7 @@ struct MonitorLogEntry: Identifiable {
 /// It mirrors the shape of the AppCore event pump but has no engine logic,
 /// so it can run before AppCore exists (Phase 2).
 ///
-/// - 60 s CG window scan (stopped while displays sleep)
+/// - Periodic CG window scan (1 s or 60 s, stopped while displays sleep)
 /// - FrontmostFocusObserver moved on each app activation
 /// - Inspect previous app on each activation
 @MainActor
@@ -45,6 +45,15 @@ final class MonitorLoop {
     private(set) var logEntries: [MonitorLogEntry] = []
     private(set) var isRunning = false
     private(set) var permissionGranted = false
+
+    /// The interval between automatic window scans (seconds).
+    /// Defaults to 1 s for live debugging. Set to 60 s for the energy test.
+    var scanIntervalSeconds: TimeInterval = 1 {
+        didSet {
+            guard isRunning else { return }
+            startScanTimer()
+        }
+    }
 
     /// The result of the last close attempt, shown in the Live Inspector.
     private(set) var lastCloseResult: CloseAttemptResult?
@@ -119,7 +128,7 @@ final class MonitorLoop {
         // Sync focus to current frontmost app
         Task { await syncFocus() }
 
-        // Start the 60 s scan timer
+        // Start the periodic scan timer
         startScanTimer()
     }
 
@@ -155,7 +164,9 @@ final class MonitorLoop {
 
     private func startScanTimer() {
         scanTimer?.cancel()
-        scanTimer = scheduler.schedule(every: 60, tolerance: 6) { [weak self] in
+        let interval = scanIntervalSeconds
+        let tolerance = max(interval * 0.1, 0.1)
+        scanTimer = scheduler.schedule(every: interval, tolerance: tolerance) { [weak self] in
             guard let self else { return }
             Task { await self.scan() }
         }

@@ -19,35 +19,40 @@ private let setupScript = TestScript(
     steps: [
         .instruction(
             id: "sb_setup_intro",
-            text: "Run `tccutil reset Accessibility net.scosman.windowcleaner.manualtest` first. "
-                + "Note the macOS version in the notes of the next step."
+            text: "Before you start, run this command in Terminal:\n"
+                + "tccutil reset Accessibility net.scosman.windowcleaner.manualtest\n"
+                + "This removes any saved Accessibility permission so the prompt tests work. "
+                + "Write the macOS version number in the notes of the next step."
         ),
         .autoCheck(
             id: "sb_bridge_available",
-            label: "Check that the private window ID bridge is available"
+            label: "Check that the system window API is available on this macOS version"
         ) {
             // Placeholder — wired by ManualTestApp with real AXWindowService check
             CheckOutcome(passed: false, detail: "Not wired")
         },
         .action(
             id: "sb_permission_prompt_action",
-            label: "Request Accessibility permission prompt"
+            label: "Open the Accessibility permission dialog"
         ) { _ in
             // Placeholder — wired by ManualTestApp with real requestPrompt() call
         },
         .humanQuestion(
             id: "sb_permission_prompt",
-            prompt: "Did the system prompt appear, and did System Settings open at Accessibility?"
+            prompt: "Did a system dialog appear asking for Accessibility access? "
+                + "Did System Settings open to the Accessibility page?"
         ),
         .humanQuestion(
             id: "sb_permission_notification",
-            prompt: "Turn the ManualTestApp on in Accessibility while this app is in the background. "
-                + "Did the event log show a `permission changed` entry, and does the status show "
-                + "Granted, without switching back to this app?"
+            prompt: "Switch away from this app, then turn the ManualTestApp toggle ON in "
+                + "System Settings > Privacy & Security > Accessibility. Without switching "
+                + "back to this app: does the event log (Live Inspector tab) show a "
+                + "'permission changed' entry, and does the toolbar show 'Granted'?"
         ),
         .humanQuestion(
             id: "sb_permission_revoke",
-            prompt: "Turn it off. Did the status change to Denied within 2 s?"
+            prompt: "Turn the ManualTestApp toggle OFF in System Settings. "
+                + "Did the toolbar status change to 'Denied' within 2 seconds?"
         )
     ]
 )
@@ -59,28 +64,32 @@ private let enumScript = TestScript(
         .humanQuestion(
             id: "sb_enum_matches",
             prompt: "Open 2 Finder windows, 1 Preview document, and 1 TextEdit document. "
-                + "Does the Live Inspector list exactly these as standard windows, plus other "
-                + "apps' real windows, and no panels or helpers?"
+                + "Go to the Live Inspector tab. Does the window list show exactly these "
+                + "windows with a 'standard' badge, plus other apps' real windows? "
+                + "Panels, helpers, and menu bar items should NOT appear."
         ),
         .humanQuestion(
             id: "sb_enum_minimized",
-            prompt: "Minimize a Finder window. Is it still listed, with `isMinimized = true` "
-                + "and the same window ID?"
+            prompt: "Minimize a Finder window to the Dock. Does it still appear in the "
+                + "Live Inspector window list with a 'minimized' badge and the same window ID?"
         ),
         .humanQuestion(
             id: "sb_enum_other_space",
-            prompt: "Move a TextEdit window to Space 2 and come back to Space 1. Is it still "
-                + "listed by the CG scan with the same ID? Is it absent from a fresh AX inspect "
-                + "of TextEdit?"
+            prompt: "Move a TextEdit window to Space 2 and come back to Space 1. "
+                + "Is the TextEdit window still shown in the window list with the same ID? "
+                + "(It may lose its title or metadata — that is expected for windows on "
+                + "another Space.)"
         ),
         .humanQuestion(
             id: "sb_enum_fullscreen",
-            prompt: "Make a Preview window full screen, then return to the desktop. Is it listed "
-                + "with the same ID?"
+            prompt: "Make a Preview window full screen (green button), then swipe back to "
+                + "the desktop. Is it still shown in the window list with the same ID? "
+                + "Note any extra window IDs that appear for the same app."
         ),
         .humanQuestion(
             id: "sb_enum_titles",
-            prompt: "Are the titles shown for current-Space windows, with no Screen Recording prompt?"
+            prompt: "Are window titles shown for windows on the current Space? "
+                + "Did macOS prompt you for Screen Recording permission? (It should NOT.)"
         )
     ]
 )
@@ -93,29 +102,32 @@ private let focusScript = TestScript(
             id: "sb_focus_events",
             prompt: "Click between 2 Finder windows, then 2 Preview windows, then 2 Safari "
                 + "windows, then 2 windows of an Electron app (Slack, VS Code, or similar). "
-                + "Did each click log `focusMayHaveChanged`, and did the resolved focused "
-                + "window ID match the clicked window every time?"
+                + "For each click: did the event log show 'focusMayHaveChanged', and did "
+                + "the 'Focused' window ID in the toolbar match the window you clicked?"
         ),
         .humanQuestion(
             id: "sb_focus_app_switch",
-            prompt: "Cmd-Tab between apps. Does every switch log `appActivated`, then the "
-                + "focused window of the new app?"
+            prompt: "Use Cmd-Tab to switch between apps. Does every switch show "
+                + "'appActivated' in the event log, followed by the focused window ID "
+                + "of the new app in the toolbar?"
         ),
         .humanQuestion(
             id: "sb_focus_new_window",
-            prompt: "Press Cmd-N in Finder. Was `windowCreated` logged, and did the new "
-                + "window appear in the inspector within 1 s?"
+            prompt: "Press Cmd-N in Finder to open a new window. Did 'windowCreated' "
+                + "appear in the event log? Did the new window appear in the window list "
+                + "within 1 second?"
         ),
         .humanQuestion(
             id: "sb_focus_launching_app",
-            prompt: "Launch an app that is not running (e.g. Calculator), and click into its "
-                + "window at once. Was the observer registered (possibly after a retry, shown "
-                + "in the log), and was focus reported?"
+            prompt: "Quit an app (e.g. Calculator), then relaunch it and click its window "
+                + "immediately. Did the event log show the observer registered (possibly "
+                + "after a retry), and was the focused window ID reported?"
         ),
         .humanQuestion(
             id: "sb_focus_sleep",
-            prompt: "Put the displays to sleep (Ctrl-Shift-Eject, or the hot corner), wait "
-                + "10 s, and wake them. Were `displaysSlept` and `displaysWoke` logged?"
+            prompt: "Put the displays to sleep (Ctrl-Shift-Eject or a hot corner), wait "
+                + "10 seconds, and wake them. Did the event log show 'displaysSlept' "
+                + "and 'displaysWoke'?"
         )
     ]
 )
@@ -126,53 +138,62 @@ private let closeScript = TestScript(
     steps: [
         .action(
             id: "sb_close_standard_action",
-            label: "Select a Finder window in the inspector and press Close"
+            label: "Close one Finder window (open a Finder window first, then click Run)"
         ) { _ in
             // Placeholder — wired by ManualTestApp
         },
         .humanQuestion(
             id: "sb_close_standard",
-            prompt: "Did only that window close, and did the result show "
-                + "`pressed(wasListed: true)`?"
+            prompt: "Did only that one Finder window close? Does the 'Last close' line "
+                + "show 'pressed' with 'wasListed: true'?"
         ),
         .humanQuestion(
             id: "sb_close_unsaved",
-            prompt: "Type text in a new TextEdit document (unsaved) and close it from the "
-                + "inspector. Did the save sheet appear, did the window stay open, and did "
-                + "the result still show `pressed`?"
+            prompt: "Open TextEdit and type some text (do not save). Select that TextEdit "
+                + "window in the Live Inspector and click Close. Did a save dialog appear? "
+                + "Did the window stay open? Does the result still show 'pressed'?"
         ),
         .humanQuestion(
             id: "sb_close_minimized",
-            prompt: "Close a minimized Preview window from the inspector. Did it close "
-                + "without restoring first?"
+            prompt: "Minimize a Preview window to the Dock. Select it in the Live Inspector "
+                + "and click Close. Did it close without restoring from the Dock first?"
         ),
         .humanQuestion(
             id: "sb_close_other_space",
-            prompt: "Inspect a TextEdit window while it is on Space 1 (so its element is "
-                + "cached). Move it to Space 2, return to Space 1, and close it from the "
-                + "inspector. Did it close? Record `wasListed` in the notes."
+            prompt: "Open a TextEdit window on Space 1 so the Live Inspector sees it. "
+                + "Move that window to Space 2, come back to Space 1, and click Close "
+                + "in the inspector. Did the window close on Space 2? "
+                + "Record the 'wasListed' value from the result line."
         ),
         .humanQuestion(
             id: "sb_close_fullscreen",
-            prompt: "Close a full-screen Preview window from the inspector (while you are "
-                + "on another Space, and then while on its Space). Record the outcomes."
+            prompt: "Make a Preview window full screen. Run this test twice:\n"
+                + "1) From another Space: select the full-screen window in the inspector "
+                + "and click 'Close in 5 s', then swipe to a different Space before the "
+                + "5 seconds elapse. Record the result.\n"
+                + "2) From the window's own Space: select the full-screen window in the "
+                + "inspector and click 'Close in 5 s', then swipe to the full-screen "
+                + "window's Space before the 5 seconds elapse. Record the result.\n"
+                + "Write both outcomes in the notes."
         ),
         .humanQuestion(
             id: "sb_close_tabs",
-            prompt: "Open a Finder window with 3 tabs and close it from the inspector. "
-                + "What happened (all tabs closed / one tab / a prompt)? Record it in the notes."
+            prompt: "Open a Finder window with 3 tabs (Cmd-T to add tabs). In the Live "
+                + "Inspector, each tab appears as its own window row. Select one tab's row "
+                + "and click Close. Did only that one tab close, leaving the other tabs open?"
         ),
         .humanQuestion(
             id: "sb_close_hung_app",
-            prompt: "Open TextEdit, run `kill -STOP <pid>` (the pid is shown in the inspector), "
-                + "and close its window from the inspector. Did the call return within about 1 s, "
-                + "with `failed` or `unreachable`, and did the ManualTestApp UI stay responsive? "
-                + "Then run `kill -CONT <pid>`."
+            prompt: "Open TextEdit. Note its pid shown in the Live Inspector. In Terminal, "
+                + "run: kill -STOP <pid> (this freezes TextEdit). Select the TextEdit window "
+                + "in the inspector and click Close. Did the close return within about 1 second "
+                + "with 'failed' or 'unreachable'? Did the ManualTestApp stay responsive? "
+                + "Then run: kill -CONT <pid> to unfreeze TextEdit."
         ),
         .humanQuestion(
             id: "sb_close_no_button",
-            prompt: "Open a panel window (for example Font panel via Cmd-T in TextEdit). "
-                + "Is it absent from the standard windows (or marked non-standard)?"
+            prompt: "Open a panel window (e.g. Cmd-T in TextEdit opens the Font panel). "
+                + "Is the panel absent from the window list, or marked 'non-standard'?"
         )
     ]
 )
@@ -184,18 +205,19 @@ private let urlsScript = TestScript(
         .humanQuestion(
             id: "sb_document_urls",
             prompt: "Open a Finder window at ~/Downloads, a PDF in Preview, a movie in "
-                + "QuickTime Player, and a file in TextEdit. Record which ones show a file "
-                + "URL in the inspector."
+                + "QuickTime Player, and a file in TextEdit. In the Live Inspector, which "
+                + "windows show a file path (blue text) below the title? Record which apps "
+                + "do and do not show a URL."
         ),
         .action(
             id: "sb_reopen_action",
-            label: "Call LiveAppOpener.open(documentURL:withBundleID:) with the captured URLs"
+            label: "Reopen documents captured from previously closed windows"
         ) { _ in
             // Placeholder — wired by ManualTestApp
         },
         .humanQuestion(
             id: "sb_reopen",
-            prompt: "Did each window reopen in the correct app (Finder in a new window)?"
+            prompt: "Did each document reopen in the correct app?"
         )
     ]
 )
@@ -206,18 +228,20 @@ private let quitScript = TestScript(
     steps: [
         .action(
             id: "sb_quit_normal_action",
-            label: "Terminate QuickTime Player (no windows open) through LiveAppTerminator"
+            label: "Send a Quit command to QuickTime Player (launch it first with no open windows)"
         ) { _ in
             // Placeholder — wired by ManualTestApp
         },
         .humanQuestion(
             id: "sb_quit_normal",
-            prompt: "Did QuickTime Player quit normally?"
+            prompt: "Did QuickTime Player quit normally? (If it was not running, click Run "
+                + "above — it will launch QuickTime Player. Wait a moment, then click Run "
+                + "again to send the quit command.)"
         ),
         .humanQuestion(
             id: "sb_quit_unsaved",
-            prompt: "Terminate TextEdit that has an unsaved document. Did it show its save "
-                + "prompt (not force-quit)?"
+            prompt: "Open TextEdit with unsaved text. Right-click TextEdit in the Dock and "
+                + "choose Quit. Did TextEdit show its save dialog instead of force-quitting?"
         )
     ]
 )
@@ -228,32 +252,34 @@ private let runtimeScript = TestScript(
     steps: [
         .action(
             id: "sb_timer_latency_action",
-            label: "Arm 5 one-shot LiveAppScheduler timers at +2, +5, +10, +20, and +30 min"
+            label: "Start 5 countdown timers at +2, +5, +10, +20, and +30 minutes"
         ) { _ in
             // Placeholder — wired by ManualTestApp
         },
         .humanQuestion(
             id: "sb_timer_latency",
-            prompt: "Hide the ManualTestApp (Cmd-H) and leave the Mac awake and idle. After "
-                + "30 min, the tab shows the lateness of each timer. Were all timers late by "
-                + "less than 60 s?"
+            prompt: "Hide the ManualTestApp (Cmd-H) and leave the Mac awake and idle. "
+                + "After 30 minutes, come back to this tab. It shows how late each timer "
+                + "fired. Were all timers late by less than 60 seconds?"
         ),
         .humanQuestion(
             id: "sb_energy",
-            prompt: "With the Live Inspector Monitor on and the app hidden for 10 min (use "
-                + "the Mac normally during this time), does Activity Monitor -> Energy show "
-                + "'Avg Energy Impact' near 0 and CPU near 0%?"
+            prompt: "First, go to the Live Inspector tab and set the scan interval to 60 s "
+                + "(this is the production cadence — the 1 s default is for debugging only). "
+                + "Turn the Monitor on, hide the ManualTestApp (Cmd-H), and use the Mac "
+                + "normally for 10 minutes. Then check Activity Monitor > Energy. "
+                + "Is 'Avg Energy Impact' near 0 and CPU near 0%?"
         ),
         .action(
             id: "sb_login_item_action",
-            label: "Call LiveLoginItem.setEnabled(true) on the ManualTestApp"
+            label: "Register this app as a Login Item (opens at login)"
         ) { _ in
             // Placeholder — wired by ManualTestApp
         },
         .humanQuestion(
             id: "sb_login_item",
-            prompt: "Did it appear in System Settings -> General -> Login Items? "
-                + "Then disable it: did it go away?"
+            prompt: "Did the ManualTestApp appear in System Settings > General > Login Items? "
+                + "Turn it off there — did it disappear?"
         )
     ]
 )
@@ -264,14 +290,15 @@ private let scanScript = TestScript(
     steps: [
         .autoCheck(
             id: "sb_installed_apps_check",
-            label: "Run LiveInstalledAppScanner and verify com.apple.finder and com.apple.Preview are present"
+            label: "Scan for installed apps and verify Finder and Preview are found"
         ) {
             // Placeholder — wired by ManualTestApp
             CheckOutcome(passed: false, detail: "Not wired")
         },
         .humanQuestion(
             id: "sb_installed_apps",
-            prompt: "Does the list include your third-party apps from /Applications (spot-check 3)?"
+            prompt: "Review the app list shown above after running the check. "
+                + "Do you see your third-party apps from /Applications? Spot-check at least 3."
         )
     ]
 )

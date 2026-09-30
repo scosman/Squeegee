@@ -201,9 +201,13 @@ enum WiredScripts {
             let hasFinder = apps.contains { $0.bundleID == "com.apple.finder" }
             let hasPreview = apps.contains { $0.bundleID == "com.apple.Preview" }
             let passed = hasFinder && hasPreview
-            let detail = "Found \(apps.count) apps. "
+            let summary = "Found \(apps.count) apps. "
                 + "Finder: \(hasFinder ? "yes" : "NO"), "
                 + "Preview: \(hasPreview ? "yes" : "NO")"
+
+            let sorted = apps.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            let listing = sorted.map { "\($0.name) — \($0.bundleID)" }.joined(separator: "\n")
+            let detail = summary + "\n\n" + listing
             return CheckOutcome(passed: passed, detail: detail)
         }
     }

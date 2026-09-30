@@ -124,9 +124,21 @@ struct StepView: View {
         }
 
         if let checkOutcome {
-            Text(checkOutcome.detail)
-                .foregroundStyle(checkOutcome.passed ? .green : .red)
-                .font(.caption)
+            if checkOutcome.detail.count > 200 {
+                ScrollView {
+                    Text(checkOutcome.detail)
+                        .foregroundStyle(checkOutcome.passed ? .green : .red)
+                        .font(.caption)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 300)
+                .border(Color.secondary.opacity(0.2))
+            } else {
+                Text(checkOutcome.detail)
+                    .foregroundStyle(checkOutcome.passed ? .green : .red)
+                    .font(.caption)
+            }
         }
     }
 
