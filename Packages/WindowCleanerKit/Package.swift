@@ -105,10 +105,10 @@ let package = Package(
             swiftSettings: warningsAsErrors
         ),
 
-        // L3b: AppShellUI (SwiftUI; depends OnboardingUI, SettingsUI)
+        // L3b: AppShellUI (SwiftUI; depends OnboardingUI, SettingsUI, AppCore)
         .target(
             name: "AppShellUI",
-            dependencies: ["OnboardingUI", "SettingsUI"],
+            dependencies: ["OnboardingUI", "SettingsUI", "AppCore"],
             swiftSettings: warningsAsErrors
         ),
 

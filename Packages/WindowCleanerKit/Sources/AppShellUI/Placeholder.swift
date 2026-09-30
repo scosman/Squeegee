@@ -1,3 +1,1 @@
-import SwiftUI
-
-// AppShellUI module — MainWindowRootView, route switch
+// AppShellUI module — MainWindowRootView, LaunchState, route switch
