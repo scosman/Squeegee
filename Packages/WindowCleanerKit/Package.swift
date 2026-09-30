@@ -121,6 +121,11 @@ let package = Package(
             dependencies: ["OnboardingUI", "SettingsUI", "AppCore"],
             swiftSettings: warningsAsErrors
         ),
+        .testTarget(
+            name: "AppShellUITests",
+            dependencies: ["AppShellUI"],
+            swiftSettings: warningsAsErrors
+        ),
 
         // ManualTestKit (Foundation; pure)
         .target(

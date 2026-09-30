@@ -7,7 +7,36 @@ import Presentation
 /// Each `NSMenuItem` stores its `MenuAction?` in `representedObject`
 /// so the caller can dispatch it from a single action selector.
 public enum MenuRenderer {
-    /// Renders the given content into an NSMenu. Menu items that carry an
+    /// Populates the given menu in place with items from the content tree.
+    /// Removes all existing items first, then adds sections, headers, and
+    /// items directly — no intermediate NSMenu, no item-move between menus.
+    public static func populate(
+        _ menu: NSMenu,
+        with content: MenuContent,
+        target: AnyObject,
+        action: Selector
+    ) {
+        menu.removeAllItems()
+
+        for (sectionIndex, section) in content.sections.enumerated() {
+            if sectionIndex > 0 {
+                menu.addItem(.separator())
+            }
+
+            if let header = section.header {
+                menu.addItem(.sectionHeader(title: header))
+            }
+
+            for item in section.items {
+                let nsItem = makeNSMenuItem(
+                    from: item, target: target, action: action
+                )
+                menu.addItem(nsItem)
+            }
+        }
+    }
+
+    /// Renders the given content into a new NSMenu. Menu items that carry an
     /// action target `target` with the given `action` selector.
     public static func render(
         _ content: MenuContent,
@@ -16,27 +45,7 @@ public enum MenuRenderer {
     ) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
-
-        for (sectionIndex, section) in content.sections.enumerated() {
-            // Separator between sections (not before the first one)
-            if sectionIndex > 0 {
-                menu.addItem(.separator())
-            }
-
-            // Section header
-            if let header = section.header {
-                menu.addItem(.sectionHeader(title: header))
-            }
-
-            // Items
-            for item in section.items {
-                let nsItem = makeNSMenuItem(
-                    from: item, target: target, action: action
-                )
-                menu.addItem(nsItem)
-            }
-        }
-
+        populate(menu, with: content, target: target, action: action)
         return menu
     }
 

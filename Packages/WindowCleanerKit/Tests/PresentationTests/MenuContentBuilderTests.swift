@@ -310,3 +310,35 @@ struct MenuContentBuilderBannerFooterTests {
         #expect(untilResumed?.isChecked == false)
     }
 }
+
+// MARK: - MenuAction.logLabel
+
+@Suite("MenuAction — logLabel")
+struct MenuActionLogLabelTests {
+    @Test func logLabelOmitsPrivateData() {
+        // reopen carries a ClosureValue with a window title — logLabel must not leak it.
+        let closure = ClosureValue(
+            bundleID: "com.example.app",
+            appName: "Example",
+            windowTitle: "SECRET_TITLE",
+            documentURL: URL(string: "file:///Users/test/secret.txt"),
+            kind: .windowClosed,
+            closedAt: Date()
+        )
+        let label = MenuAction.reopen(closure).logLabel
+        #expect(label == "reopen")
+        #expect(!label.contains("SECRET_TITLE"))
+    }
+
+    @Test func logLabelIncludesBundleIDForOpenRule() {
+        let label = MenuAction.openRule(bundleID: "com.apple.finder", source: .app).logLabel
+        #expect(label.contains("com.apple.finder"))
+    }
+
+    @Test func logLabelSimpleCases() {
+        #expect(MenuAction.resume.logLabel == "resume")
+        #expect(MenuAction.quit.logLabel == "quit")
+        #expect(MenuAction.openSettings.logLabel == "openSettings")
+        #expect(MenuAction.pauseOneHour.logLabel == "pauseOneHour")
+    }
+}

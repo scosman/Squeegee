@@ -280,3 +280,108 @@ struct MenuRendererTests {
         #expect(childAction == .pauseOneHour)
     }
 }
+
+// MARK: - populate (in-place rendering)
+
+@Suite("MenuRenderer.populate")
+@MainActor
+struct MenuRendererPopulateTests {
+    private let target = ActionTarget()
+    private var action: Selector {
+        #selector(ActionTarget.handleAction(_:))
+    }
+
+    private func makeContent(sections: [MenuSection]) -> MenuContent {
+        MenuContent(sections: sections)
+    }
+
+    private func visibleItems(_ menu: NSMenu) -> [NSMenuItem] {
+        menu.items.filter { !$0.isSeparatorItem }
+    }
+
+    @Test func populateAddsItemsDirectly() {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let content = makeContent(sections: [
+            MenuSection(items: [
+                MenuItem(title: "Resume", action: .resume),
+                MenuItem(title: "Quit WindowCleaner", action: .quit)
+            ])
+        ])
+
+        MenuRenderer.populate(menu, with: content, target: target, action: action)
+
+        let items = visibleItems(menu)
+        #expect(items.count == 2)
+        #expect(items[0].title == "Resume")
+        #expect(items[1].title == "Quit WindowCleaner")
+        // Every item belongs to this menu (not to a temporary intermediate menu)
+        for item in menu.items {
+            #expect(item.menu === menu)
+        }
+    }
+
+    @Test func populateTwiceReplacesContent() {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+
+        let first = makeContent(sections: [
+            MenuSection(items: [MenuItem(title: "A"), MenuItem(title: "B")])
+        ])
+        MenuRenderer.populate(menu, with: first, target: target, action: action)
+        #expect(visibleItems(menu).count == 2)
+
+        let second = makeContent(sections: [
+            MenuSection(items: [MenuItem(title: "X")])
+        ])
+        MenuRenderer.populate(menu, with: second, target: target, action: action)
+
+        let items = visibleItems(menu)
+        #expect(items.count == 1)
+        #expect(items[0].title == "X")
+    }
+
+    @Test func populateSubmenuAttachedCorrectly() throws {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let content = makeContent(sections: [
+            MenuSection(items: [
+                MenuItem(title: "Pause", submenu: [
+                    MenuItem(title: "For 1 Hour", action: .pauseOneHour),
+                    MenuItem(title: "Until Tomorrow", action: .pauseUntilTomorrow),
+                    MenuItem(title: "Until Resumed", action: .pauseUntilResumed)
+                ])
+            ])
+        ])
+
+        MenuRenderer.populate(menu, with: content, target: target, action: action)
+
+        let pauseItem = try #require(visibleItems(menu).first)
+        #expect(pauseItem.title == "Pause")
+        let sub = try #require(pauseItem.submenu)
+        #expect(sub.items.count == 3)
+        #expect(sub.items[0].title == "For 1 Hour")
+        #expect(sub.items[2].title == "Until Resumed")
+        // Submenu items have the correct target
+        #expect(sub.items[0].target != nil)
+    }
+
+    @Test func populateWithSectionsAddsSeparators() {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let content = makeContent(sections: [
+            MenuSection(header: "Up Next", items: [
+                MenuItem(title: "Window 1", isEnabled: false)
+            ]),
+            MenuSection(items: [
+                MenuItem(title: "Settings\u{2026}", action: .openSettings)
+            ])
+        ])
+
+        MenuRenderer.populate(menu, with: content, target: target, action: action)
+
+        // header + item + separator + item = 4
+        #expect(menu.items.count == 4)
+        #expect(menu.items[2].isSeparatorItem)
+    }
+}

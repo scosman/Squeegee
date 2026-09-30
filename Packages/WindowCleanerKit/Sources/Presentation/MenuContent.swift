@@ -21,6 +21,22 @@ public enum MenuAction: Sendable, Equatable {
     case openSettings
     /// Quit the app.
     case quit
+
+    /// A privacy-safe label for logging. Omits associated values that may
+    /// contain window titles or document URLs (see CLAUDE.md: privacy: .private).
+    public var logLabel: String {
+        switch self {
+        case .openAccessibilitySettings: "openAccessibilitySettings"
+        case .resume: "resume"
+        case let .openRule(bundleID, _): "openRule(\(bundleID))"
+        case .reopen: "reopen"
+        case .pauseOneHour: "pauseOneHour"
+        case .pauseUntilTomorrow: "pauseUntilTomorrow"
+        case .pauseUntilResumed: "pauseUntilResumed"
+        case .openSettings: "openSettings"
+        case .quit: "quit"
+        }
+    }
 }
 
 /// A single item in the menu.

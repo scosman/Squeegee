@@ -131,8 +131,11 @@ public final class AppCore {
 
     /// Initializes the event pump. Call once after construction.
     public func start() async {
+        logger.info("AppCore.start() beginning")
         // 1. Check permission
         permission = ports.permission.isTrusted() ? .granted : .denied
+        let permState = permission
+        logger.info("Permission state: \(String(describing: permState), privacy: .public)")
 
         // 2. Set initial route
         let restoredSelection = restoreSettingsSelection()
@@ -155,6 +158,8 @@ public final class AppCore {
         // 5. Start rule observation and plan
         observeRules()
         replan()
+        let currentRoute = route
+        logger.info("AppCore.start() complete, route=\(String(describing: currentRoute), privacy: .public)")
     }
 
     /// Saves tracker state immediately before the app terminates.
@@ -243,7 +248,12 @@ public final class AppCore {
 
     /// Opens Settings at the given selection and shows the main window.
     public func open(_ selection: SettingsSelection) {
-        guard store.settings.onboardingComplete else { return }
+        guard store.settings.onboardingComplete else {
+            logger.info("open(\(String(describing: selection), privacy: .public)) ignored — onboarding not complete")
+            return
+        }
+        let callbackIsSet = showMainWindow != nil
+        logger.info("open(\(String(describing: selection), privacy: .public)), showMainWindow callback set: \(callbackIsSet)")
         route = .settings(selection)
         store.settings.lastSettingsSelection = selectionString(selection)
         showMainWindow?()

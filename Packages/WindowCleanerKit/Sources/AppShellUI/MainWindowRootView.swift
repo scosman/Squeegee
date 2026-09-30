@@ -5,10 +5,14 @@ import SwiftUI
 
 /// The main window root: switches on `core.route` to show either the
 /// onboarding flow or the settings view.
-struct MainWindowRootView: View {
+public struct MainWindowRootView: View {
     let launchState: LaunchState
 
-    var body: some View {
+    public init(launchState: LaunchState) {
+        self.launchState = launchState
+    }
+
+    public var body: some View {
         if let core = launchState.core {
             contentView(core: core)
         } else {

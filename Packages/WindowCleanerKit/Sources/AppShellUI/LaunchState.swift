@@ -19,7 +19,15 @@ public final class LaunchState {
     public init() {}
 
     /// Opens the main window via the captured SwiftUI action.
-    public func openWindow() {
-        openAction?(id: "main")
+    /// Returns `true` if the action was available and called;
+    /// `false` if no OpenWindowAction has been captured yet
+    /// (e.g. when the Window scene is suppressed).
+    @discardableResult
+    public func openWindow() -> Bool {
+        if let openAction {
+            openAction(id: "main")
+            return true
+        }
+        return false
     }
 }

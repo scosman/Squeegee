@@ -4,6 +4,7 @@ import AppShellUI
 import MenuBarUI
 import OSLog
 import Persistence
+import SwiftUI
 import SystemBridge
 
 private let logger = Logger(subsystem: "net.scosman.windowcleaner", category: "AppDelegate")
@@ -18,10 +19,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var core: AppCore?
     private var statusItemController: StatusItemController?
     private var windowObserver: NSObjectProtocol?
+    /// NSWindow managed directly by AppDelegate when the SwiftUI
+    /// OpenWindowAction is not available (suppressed scene).
+    private var mainWindow: NSWindow?
 
     // MARK: - Lifecycle
 
     func applicationDidFinishLaunching(_: Notification) {
+        logger.info("applicationDidFinishLaunching")
         let storeURL = appSupportURL()
         let store: Store
         do {
@@ -73,6 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Start the engine
         Task { @MainActor in
             await appCore.start()
+            logger.info("AppCore started, onboardingComplete=\(store.settings.onboardingComplete)")
 
             // If onboarding is not complete, show the main window
             if !store.settings.onboardingComplete {
@@ -97,8 +103,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Window management
 
     private func showMainWindow() {
+        logger.info("showMainWindow called")
         NSApp.setActivationPolicy(.regular)
-        launchState.openWindow()
+
+        if !launchState.openWindow() {
+            // Fallback: .defaultLaunchBehavior(.suppressed) prevented the
+            // SwiftUI scene from ever instantiating MainWindowRootContent,
+            // so the OpenWindowAction was never captured. Create and show
+            // an NSWindow with the same view hierarchy directly.
+            logger.info("OpenWindowAction unavailable, creating NSWindow fallback")
+            showMainWindowDirectly()
+        }
+
         NSApp.activate()
 
         // Make the window key on the next main-queue turn
@@ -107,6 +123,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .first { $0.level == .normal && $0.canBecomeKey }?
                 .makeKeyAndOrderFront(nil)
         }
+    }
+
+    /// Creates or brings forward an NSWindow hosting MainWindowRootView.
+    /// Used when the SwiftUI scene's OpenWindowAction is unavailable.
+    private func showMainWindowDirectly() {
+        if let existing = mainWindow {
+            existing.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        let rootView = MainWindowRootView(launchState: launchState)
+        let hostingView = NSHostingView(rootView: rootView)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 760, height: 540),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "WindowCleaner"
+        window.contentView = hostingView
+        window.center()
+        window.contentMinSize = NSSize(width: 640, height: 440)
+
+        mainWindow = window
+        window.makeKeyAndOrderFront(nil)
+        logger.info("Created main window via NSWindow fallback")
     }
 
     private func checkActivationPolicy() {

@@ -33,6 +33,7 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
         self.core = core
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
+        logger.info("StatusItemController initialized")
 
         // Configure the menu
         let menu = NSMenu()
@@ -53,19 +54,16 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// Rebuilds the menu each time it opens (ui_design: "built when it opens").
     /// AppKit calls this on the main thread; the @MainActor class provides isolation.
+    /// Items are added directly into the status menu — no intermediate NSMenu,
+    /// which avoids menu-tracking session conflicts from moving items between menus.
     public func menuNeedsUpdate(_ menu: NSMenu) {
         let content = core.menuContent()
-        let rendered = MenuRenderer.render(
-            content,
+        MenuRenderer.populate(
+            menu,
+            with: content,
             target: self,
             action: #selector(menuItemClicked(_:))
         )
-
-        menu.removeAllItems()
-        for item in rendered.items {
-            rendered.removeItem(item)
-            menu.addItem(item)
-        }
     }
 
     // MARK: - Action dispatch
@@ -76,6 +74,8 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func dispatchAction(_ action: MenuAction) {
+        // Log the action kind only — ClosureValue may contain window titles (privacy: .private).
+        logger.info("Menu action dispatched: \(action.logLabel, privacy: .public)")
         switch action {
         case .openAccessibilitySettings:
             core.openAccessibilitySettings()
