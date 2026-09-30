@@ -1,4 +1,5 @@
 import AppCore
+import OnboardingUI
 import SettingsUI
 import SwiftUI
 
@@ -16,35 +17,16 @@ struct MainWindowRootView: View {
         }
     }
 
-    @ViewBuilder
     private func contentView(core: AppCore) -> some View {
-        switch core.route {
-        case .onboarding:
-            // Onboarding views are built in Phase 8. Show a placeholder.
-            onboardingPlaceholder(core: core)
+        Group {
+            switch core.route {
+            case .onboarding:
+                OnboardingRootView(core: core)
 
-        case let .settings(selection):
-            SettingsRootView(core: core, initialSelection: selection)
-        }
-    }
-
-    private func onboardingPlaceholder(core: AppCore) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "sparkles")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
-            Text("WindowCleaner")
-                .font(.largeTitle)
-                .fontWeight(.semibold)
-            Text("Onboarding screens are coming in a future update.")
-                .foregroundStyle(.secondary)
-            Button("Skip to Settings") {
-                core.completeOnboarding()
+            case let .settings(selection):
+                SettingsRootView(core: core, initialSelection: selection)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .frame(minWidth: 640, minHeight: 600)
+        .modifier(WindowChromeModifier(route: core.route))
     }
 }

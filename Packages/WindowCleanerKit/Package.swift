@@ -102,6 +102,11 @@ let package = Package(
             dependencies: ["SharedUI", "AppCore"],
             swiftSettings: warningsAsErrors
         ),
+        .testTarget(
+            name: "OnboardingUITests",
+            dependencies: ["OnboardingUI", "AppCore", "TestSupport"],
+            swiftSettings: warningsAsErrors
+        ),
 
         // L3: SettingsUI (SwiftUI; depends SharedUI, AppCore, Persistence)
         .target(
