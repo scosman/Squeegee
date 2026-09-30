@@ -155,6 +155,7 @@ Keep an entry only when **all** of these are true:
 - `isOnScreen` = `kCGWindowIsOnscreen as? Bool ?? false`. It is informational only. The engine does not depend on it (because of the macOS 14/15 bug from the research).
 - `kCGWindowName` is never read (it needs Screen Recording).
 - `appLookup` caches `ObservedApp` per pid for the duration of one call.
+- **Hardware findings** (hardware_findings.md): each native tab is its own CG window. A full-screen window keeps its ID, and macOS adds a second window for it. AX gives no metadata for either while the user is not on that Space, so the extra window stays at `metadata == nil` (unmanaged) until AX lists it.
 
 ## 3. `AXWindowService` (actor; implements `WindowInspecting` + `WindowClosing`)
 
@@ -271,7 +272,7 @@ This is not a documented notification. It is verified by the ManualTestApp (`sb_
   - Deduplicate by bundle ID; the first found wins, in the order `/Applications`, `/System/Applications`, `~/Applications`, running.
   - It runs off-main.
 - **`LiveAppOpener`:**
-  - `open(documentURL:withBundleID:)` → `NSWorkspace.shared.open([url], withApplicationAt: appURL(for: bundleID), configuration: .init())`. `configuration.activates = true`. For Finder, this opens the folder in a new Finder window.
+  - `open(documentURL:withBundleID:)` → `NSWorkspace.shared.open([url], withApplicationAt: appURL(for: bundleID), configuration: .init())`. `configuration.activates = true`. (Finder exposes no document URL, so Finder closures are never reopened this way.)
   - `launch(bundleID:)` → `openApplication(at:configuration:)`.
   - `fileExists` → `FileManager.default.fileExists(atPath: url.path)`.
 - **`LiveAppScheduler`:** implements `AppScheduler` with `DispatchSource` timers on the main queue (details in engine.md §6.2).

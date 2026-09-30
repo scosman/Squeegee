@@ -479,7 +479,7 @@ Status text (Presentation; adds to ui_design §7): `.scheduled` → `in 2h 10m`;
 34. `dryRun` ignores pause and permission; lists due windows only; a draft that turns off a rule produces no closes; a draft that removes an "off" app rule while the global rule is on lists that app's old windows.
 
 **AppCore scenarios** (FakeScheduler + fake ports + in-memory store)
-35. Open Finder window → after 6 h since last active, a close is sent → the window disappears in the +2 s scan → a history record with title and URL.
+35. Open Finder window → after 6 h since last active, a close is sent → the window disappears in the +2 s scan → a history record with its title and no URL (Finder exposes none; hardware_findings.md).
 36. The app shows a save dialog (the fake keeps the window) → `.keptOpen` at +10 s, no retry at +1 h. The user focuses it for 6 s → deadline reset → closes after the next period.
 37. Kept element on another Space: the press succeeds but the window stays with `wasListed = false` → `.dueUnreachable`. A Space change inspection lists it → closes.
 38. QuickTime `.always`: the last window closed by the user → a quit 60 s later (not frontmost) → terminated → history "app quit".

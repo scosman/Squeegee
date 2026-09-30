@@ -61,8 +61,8 @@ Up Next                                  ← section header
 3 more                    (disabled)     ← only if more than 8
 ─────────────
 Recently Closed                          ← section header
-📁 Projects
-   Finder · 20m ago
+📄 Report.pdf
+   Preview · 20m ago
 💬 Messages
    1h ago
 🎬 QuickTime Player
@@ -79,12 +79,12 @@ Quit WindowCleaner                ⌘Q
 | Row | Title | Subtitle | Click action |
 |---|---|---|---|
 | Up Next | window title (app name if no title) | `App · in 2h 10m`; `App · waiting — in use` if past deadline and focused | Open app window at this app's rule (or "All other apps" if the global rule covers it) |
-| Recently Closed — window with URL | window title | `App · 20m ago` | **Reopen** the document or folder (§9) |
+| Recently Closed — window with URL | window title | `App · 20m ago` | **Reopen** the document (§9) |
 | Recently Closed — window without URL | window title | `App · 20m ago` | Open (activate or launch) the app |
 | Recently Closed — app quit | app name | `Quit · 2h ago` | Launch the app |
 | Recently Closed — URL no longer exists | window title | `App · File not found` | Disabled |
 
-Every clickable Recently Closed row has a tooltip that states what the click does ("Reopen Projects in Finder", "Open Messages").
+Every clickable Recently Closed row has a tooltip that states what the click does ("Reopen Report.pdf in Preview", "Open Finder").
 
 **States**
 

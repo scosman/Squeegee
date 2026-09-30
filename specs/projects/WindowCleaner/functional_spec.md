@@ -123,7 +123,7 @@ WindowCleaner **sends a close** — the same as clicking the window's red close 
 
 - If the app closes the window, WindowCleaner records a closure (§8).
 - If the app does not close it (a "save changes?" dialog, a confirm prompt, or anything else), that is the app's decision. WindowCleaner does nothing more. It does not click dialog buttons and does not try again (§5.3).
-- A tabbed window (e.g. Finder with tabs) is one window. Its close button can close all tabs, or the app can ask for confirmation. This is app behavior and WindowCleaner accepts it.
+- Each native macOS tab (e.g. a Finder window with tabs) is its own window, with its own timers. A close closes only that tab (verified on hardware; see hardware_findings.md).
 
 ### 5.3 One attempt per activity period
 
@@ -209,9 +209,9 @@ Settings has a "Show menu bar icon" toggle (default on). When off, the icon is n
 
 For each closure WindowCleaner records: app bundle ID, app name, window title, closed time, kind (window closed / app quit), and the window's document or folder URL if the app exposes one.
 
-- **Reopen** opens the URL in the same app (for Finder, it opens the folder in a new Finder window).
+- **Reopen** opens the URL in the same app.
 - If the file or folder no longer exists, Reopen shows an inline error ("File not found") and the button is disabled for that row.
-- Apps that do not expose a URL get no Reopen button.
+- Apps that do not expose a URL get no Reopen button; the row opens (activates or launches) the app. This includes **Finder**, which exposes a title but no folder URL (hardware_findings.md).
 
 WindowCleaner stores the last **1000** closure records on disk, first in, first out (the V1 menu shows 8; the P2 history window will show all).
 
@@ -244,7 +244,7 @@ A built-in list. Bundle IDs are verified during implementation; apps not found a
 
 | Category | App (bundle ID) | Close after | Measure from | Quit when last window closed | Why |
 |---|---|---|---|---|---|
-| Files | Finder (`com.apple.finder`) | 6 h | Last active | n/a | Folder windows pile up; reopen is easy. |
+| Files | Finder (`com.apple.finder`) | 6 h | Last active | n/a | Folder windows pile up; no data loss. |
 | Files | Preview (`com.apple.Preview`) | 12 h | Last active | off | Read-only viewing in most cases. |
 | Media | Photos (`com.apple.Photos`) | 2 h | Last active | off | Uses a lot of resources; no data loss. |
 | Media | QuickTime Player (`com.apple.QuickTimePlayerX`) | 2 h | Last active | **Always** | Stays running with no windows; no data loss. |
@@ -281,7 +281,7 @@ Stored locally on disk (no network, no telemetry, no accounts):
 | Target app quits or crashes | Its windows are no longer tracked. Nothing is recorded as a closure. |
 | Target app relaunches and restores windows | Restored windows are new windows (opened = first seen). |
 | Window moves between Spaces, is minimized, or goes full-screen | Same window; times are kept. Minimized and other-Space windows are never "active" until the user brings them forward. |
-| Closing a full-screen window | Allowed. macOS removes its Space. |
+| Closing a full-screen window | Allowed. macOS removes its Space. While the user is not on its Space, its title and URL are not readable; the last known values are kept. macOS also adds an extra window for a full-screen window; it stays unmanaged until WindowCleaner can inspect it. |
 | Window title changes (e.g. Finder navigates) | Same window; the title shown in the UI updates. The closure record uses the title at close time. |
 | App does not respond to close | WindowCleaner does not wait or retry (§5.3). The app remains as it is. |
 | Rule edited | Deadlines are calculated again at the next check, with the new values. |
@@ -306,6 +306,8 @@ These come from gaps in the research. The architecture must plan a way to test t
 
 - The private window ID bridge (`_AXUIElementGetWindow`) on macOS 26.
 - Close behavior on an app that does not respond (timeouts).
-- Document/folder URL access for Finder, Preview, and QuickTime (for Reopen).
-- Close button behavior on tabbed windows (Finder).
-- Timer accuracy while the app is in App Nap.
+- Document/folder URL access for Finder, Preview, and QuickTime (for Reopen). **Done:** Preview and QuickTime yes, Finder no.
+- Close button behavior on tabbed windows (Finder). **Done:** each tab is its own window.
+- Timer accuracy while the app is in App Nap. **Open** (backlog).
+
+Results: hardware_findings.md.
