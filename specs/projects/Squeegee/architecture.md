@@ -27,7 +27,7 @@ Detailed component designs:
 ├── App/                          # thin app target (XcodeGen)
 │   ├── project.yml
 │   ├── Sources/SqueegeeApp.swift, AppDelegate.swift
-│   ├── Resources/Info.plist, Assets.xcassets
+│   ├── Resources/Info.plist, icon.icon
 │   └── Squeegee.entitlements
 ├── ManualTestApp/                # hardware test harness (XcodeGen)
 │   ├── project.yml

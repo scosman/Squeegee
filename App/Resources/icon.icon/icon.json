@@ -1,0 +1,51 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "extended-gray:0.00000,1.00000",
+      "display-p3:0.20000,0.20000,0.20000,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "blend-mode" : "normal",
+      "blur-material" : null,
+      "layers" : [
+        {
+          "fill" : "automatic",
+          "image-name" : "Minimalist White Squeegee Icon-1.png",
+          "name" : "Minimalist White Squeegee Icon-1",
+          "position" : {
+            "scale" : 0.74,
+            "translation-in-points" : [
+              53.9453125,
+              -51.4375
+            ]
+          }
+        }
+      ],
+      "lighting" : "individual",
+      "position" : {
+        "scale" : 1,
+        "translation-in-points" : [
+          -11.015625,
+          9.828125
+        ]
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
