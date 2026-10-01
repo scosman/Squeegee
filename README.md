@@ -1,5 +1,5 @@
 <div align="center">
-<img width="84" height="83" alt="biscotti icon" src="https://github.com/user-attachments/assets/b681fc93-1599-4dbb-9753-b443f0b1ba38" />
+<img width="84" height="83" alt="Squeegee icon" src="https://github.com/user-attachments/assets/b681fc93-1599-4dbb-9753-b443f0b1ba38" />
 
 ### Squeegee
 
