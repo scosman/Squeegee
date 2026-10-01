@@ -3,7 +3,7 @@
 
 ### Squeegee
 
-**Clean your MacOS Windows.**
+**A MacOS app to close old windows.**
 
 <a href="https://github.com/scosman/Squeegee/releases/latest/download/Squeegee.dmg">
   <img width="165" height="38" alt="Download for macOS" src="https://github.com/user-attachments/assets/a0ff77ed-d9cd-49df-9ba5-b866098d8d67" />
@@ -12,20 +12,22 @@
 
 ---
 
-**Squeegee** is a native macOS menu bar app that closes stale windows. Set per-app rules ("close Finder windows 6 hours after I last used them"), and Squeegee closes each window when its time is up. It works per **window**, not per process: closing a stale Finder window leaves your active Finder windows open.
+**Clean you Windows:** Squeegee is a native macOS app that closes stale windows. Set per-app rules ("close Finder windows 6 hours after I last used them"), and Squeegee closes each window when its time is up. It works per **window**, not per app: closing a stale Finder window leaves your active Finder windows open.
 
 <div align="center">
 :zap: <strong>Lightweight</strong> near zero resource usage &middot; 🦾 <strong>Powerful</strong> configure each app independently
 </div>
 
-<!-- TODO: Add a screenshot or short video of the app in action -->
+<div align="center">
+<img width="384" height="325" alt="squeegee app" src="https://github.com/user-attachments/assets/0677e5c9-2e9b-4c7e-85a8-230648b64576" />
+</div>
 
 ## Features
 
 - **Per-window close timers** -- Set a duration per app. Squeegee closes each window individually when its timer expires.
 - **Last active or opened** -- "Last active" (default) tracks the last time you used a window. "Opened" counts from when the window first appeared.
 - **Per-app rules + a global default** -- Add rules for specific apps, or set one global rule that applies to everything else.
-- **Quit app when empty** -- Optionally quit an app after Squeegee closes all its windows.
+- **Quit app when last window closes** -- Optionally quit an app after the last window closes. For annoying apps like Quicktime and TextEdit that keep running in dock, even with no windows.
 - **Reopen History** -- Recent closures appear in the menu bar with one-click reopen.
 - **Suggestions** -- A built-in catalog proposes rules for common apps (Finder, Preview, QuickTime, messaging apps, and more).
 - **Pause** -- Pause all closures from the menu bar: for an hour, until tomorrow, or until you resume.
@@ -55,7 +57,7 @@ Squeegee needs the **Accessibility** permission to see and close windows of othe
 2. Open the DMG and drag **Squeegee.app** to your Applications folder.
 3. Open Squeegee and follow the onboarding to grant Accessibility access and pick your first rules.
 
-## Contributing
+## Contributing & Build Instructions
 
 See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for build instructions, architecture, and development workflow.
 
