@@ -12,15 +12,19 @@ private let logger = Logger(subsystem: "net.scosman.windowcleaner", category: "A
 /// The composition root. Creates the Store, ports, and AppCore, then starts
 /// the engine. Manages the main window's visibility and the app's activation
 /// policy (architecture section 6).
+///
+/// The main window is an `NSWindow` hosting `MainWindowRootView` in an
+/// `NSHostingView`. A SwiftUI `Window` scene with
+/// `.defaultLaunchBehavior(.suppressed)` never instantiates its content, so
+/// `OpenWindowAction` is never captured. The NSWindow path is therefore the
+/// single canonical window path — there is no fallback or scene-based
+/// alternative.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let launchState = LaunchState()
-
     private var core: AppCore?
     private var statusItemController: StatusItemController?
     private var windowObserver: NSObjectProtocol?
-    /// NSWindow managed directly by AppDelegate when the SwiftUI
-    /// OpenWindowAction is not available (suppressed scene).
+    /// The one main window managed by AppDelegate.
     private var mainWindow: NSWindow?
 
     // MARK: - Lifecycle
@@ -59,9 +63,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Create the status item controller (menu bar icon)
         statusItemController = StatusItemController(core: appCore)
 
-        // Give AppShellUI access to the core
-        launchState.core = appCore
-
         // Observe window close to manage activation policy
         windowObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
@@ -74,6 +75,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.checkActivationPolicy()
             }
         }
+
+        #if DEBUG
+            registerSelfCheckObservers()
+        #endif
 
         // Start the engine
         Task { @MainActor in
@@ -104,36 +109,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showMainWindow() {
         logger.info("showMainWindow called")
+        #if DEBUG
+            let requestTime = CFAbsoluteTimeGetCurrent()
+        #endif
+
         NSApp.setActivationPolicy(.regular)
 
-        if !launchState.openWindow() {
-            // Fallback: .defaultLaunchBehavior(.suppressed) prevented the
-            // SwiftUI scene from ever instantiating MainWindowRootContent,
-            // so the OpenWindowAction was never captured. Create and show
-            // an NSWindow with the same view hierarchy directly.
-            logger.info("OpenWindowAction unavailable, creating NSWindow fallback")
-            showMainWindowDirectly()
-        }
+        ensureMainWindow()
 
-        NSApp.activate()
+        // Defer activation to the next run-loop turn so it happens after
+        // any menu tracking or status-item event handling completes.
+        // Use activate(ignoringOtherApps:) because the cooperative
+        // NSApp.activate() is advisory and routinely refused for
+        // accessory (menu-bar) apps that are not the active app.
+        DispatchQueue.main.async { [weak self] in
+            NSApp.activate(ignoringOtherApps: true)
+            self?.mainWindow?.makeKeyAndOrderFront(nil)
 
-        // Make the window key on the next main-queue turn
-        DispatchQueue.main.async {
-            NSApp.windows
-                .first { $0.level == .normal && $0.canBecomeKey }?
-                .makeKeyAndOrderFront(nil)
+            #if DEBUG
+                SelfCheck.logWindowOpen(window: self?.mainWindow, requestTime: requestTime)
+            #endif
         }
     }
 
-    /// Creates or brings forward an NSWindow hosting MainWindowRootView.
-    /// Used when the SwiftUI scene's OpenWindowAction is unavailable.
-    private func showMainWindowDirectly() {
+    /// Creates the main window if it does not exist, or orders it front.
+    private func ensureMainWindow() {
         if let existing = mainWindow {
             existing.makeKeyAndOrderFront(nil)
             return
         }
 
-        let rootView = MainWindowRootView(launchState: launchState)
+        guard let appCore = core else {
+            logger.error("ensureMainWindow called before AppCore is ready")
+            return
+        }
+
+        let rootView = MainWindowRootView(core: appCore)
         let hostingView = NSHostingView(rootView: rootView)
 
         let window = NSWindow(
@@ -146,10 +157,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.contentView = hostingView
         window.center()
         window.contentMinSize = NSSize(width: 640, height: 440)
+        // Prevent the system from releasing the window on close; we manage
+        // the lifetime ourselves via the mainWindow property.
+        window.isReleasedWhenClosed = false
 
         mainWindow = window
         window.makeKeyAndOrderFront(nil)
-        logger.info("Created main window via NSWindow fallback")
+        logger.info("Created main window via NSWindow + NSHostingView")
     }
 
     private func checkActivationPolicy() {
@@ -160,6 +174,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.setActivationPolicy(.accessory)
         }
     }
+
+    // MARK: - Self-check (DEBUG only)
+
+    #if DEBUG
+        private func registerSelfCheckObservers() {
+            SelfCheck.registerTriggers { [weak self] in
+                self?.showMainWindow()
+            }
+
+            NotificationCenter.default.addObserver(
+                forName: NSApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                Task { @MainActor in
+                    SelfCheck.logBecomeActive()
+                }
+            }
+        }
+    #endif
 
     // MARK: - Store recovery
 

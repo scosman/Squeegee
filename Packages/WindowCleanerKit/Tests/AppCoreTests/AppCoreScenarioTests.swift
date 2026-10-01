@@ -698,6 +698,64 @@ struct AppCoreScenarioTests {
         try await core.reopen(quitClosure)
         #expect(bundle.opener.launchedBundleIDs.contains("com.apple.QuickTimePlayerX"))
     }
+
+    @Test("49: Close sent then window gone on scan — menuContent has no closing items")
+    @MainActor
+    func closeSentWindowGoneClearsClosingFromMenu() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+
+        store.addAppRule(bundleID: "com.apple.finder", appName: "Finder", rule: Rule(
+            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
+        ))
+
+        let finderWindow = observedWindow(pid: 100, windowID: 1, bundleID: "com.apple.finder", appName: "Finder")
+        bundle.windowLister.windows = [finderWindow]
+        bundle.windowInspector.inspectionResults = [100: .inspected([
+            1: standardMeta(title: "Documents")
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let key = WindowKey(pid: 100, windowID: 1)
+        bundle.windowCloser.closeResults = [key: .pressed(
+            latest: standardMeta(title: "Documents"),
+            wasListed: true
+        )]
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        // Advance past the deadline — close action fires
+        bundle.scheduler.advance(by: 3600)
+        await settle()
+
+        // Before the window disappears, menu should show "closing…"
+        let menuBefore = core.menuContent()
+        let closingBefore = menuBefore.sections.flatMap(\.items).filter {
+            $0.subtitle?.contains("closing") == true
+        }
+        #expect(!closingBefore.isEmpty, "Menu should show 'closing' right after close sent")
+
+        // Window disappears from the CG list
+        bundle.windowLister.windows = []
+        // Advance past the +2 s verification scan
+        bundle.scheduler.advance(by: 3)
+        await settle()
+
+        // Menu must no longer show any "closing…" items
+        let menuAfter = core.menuContent()
+        let closingAfter = menuAfter.sections.flatMap(\.items).filter {
+            $0.subtitle?.contains("closing") == true
+        }
+        #expect(closingAfter.isEmpty,
+                "Menu must not show 'closing' after the window is gone from the CG list")
+
+        // Settings Open Windows list for Finder must also be empty
+        let finderSchedules = core.schedules(for: .appRule(bundleID: "com.apple.finder"))
+        #expect(finderSchedules.isEmpty,
+                "Settings Open Windows should show no Finder windows")
+    }
 }
 
 // swiftlint:enable type_body_length

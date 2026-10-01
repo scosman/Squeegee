@@ -13,13 +13,15 @@ public struct SettingsRootView: View {
     }
 
     public var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: .constant(.all)) {
             SettingsSidebar(core: core, selection: $selection)
                 .frame(minWidth: 200)
         } detail: {
             detailView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .navigationSplitViewStyle(.balanced)
+        .toolbar(removing: .sidebarToggle)
         .frame(minWidth: 640, minHeight: 440)
         .onChange(of: selection) { _, newValue in
             if let sel = newValue {

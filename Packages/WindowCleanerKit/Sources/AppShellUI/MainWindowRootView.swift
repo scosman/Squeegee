@@ -6,22 +6,13 @@ import SwiftUI
 /// The main window root: switches on `core.route` to show either the
 /// onboarding flow or the settings view.
 public struct MainWindowRootView: View {
-    let launchState: LaunchState
+    let core: AppCore
 
-    public init(launchState: LaunchState) {
-        self.launchState = launchState
+    public init(core: AppCore) {
+        self.core = core
     }
 
     public var body: some View {
-        if let core = launchState.core {
-            contentView(core: core)
-        } else {
-            ProgressView("Loading\u{2026}")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    private func contentView(core: AppCore) -> some View {
         Group {
             switch core.route {
             case .onboarding:

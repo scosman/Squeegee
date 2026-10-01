@@ -91,6 +91,7 @@ private struct AppRulePageContent: View {
     let core: AppCore
     @Bindable var record: AppRuleRecord
     let bundleID: String
+    @State private var showRemoveConfirmation = false
 
     var body: some View {
         Form {
@@ -107,6 +108,20 @@ private struct AppRulePageContent: View {
             removeSection
         }
         .formStyle(.grouped)
+        .sheet(isPresented: $showRemoveConfirmation) {
+            RemoveRuleSheet(
+                appName: record.appName,
+                onRemove: {
+                    showRemoveConfirmation = false
+                    core.store.removeAppRule(bundleID: bundleID)
+                    core.store.save()
+                    core.open(.general)
+                },
+                onCancel: {
+                    showRemoveConfirmation = false
+                }
+            )
+        }
     }
 
     private var headerSection: some View {
@@ -148,8 +163,7 @@ private struct AppRulePageContent: View {
     private var removeSection: some View {
         Section {
             Button("Remove Rule", role: .destructive) {
-                core.store.removeAppRule(bundleID: bundleID)
-                core.open(.general)
+                showRemoveConfirmation = true
             }
         }
     }
@@ -240,49 +254,71 @@ private struct CloseAfterSection: View {
     }
 }
 
-/// Measure-from picker with a footer that explains the selection.
+/// Measure-from picker with subtitled options in the dropdown.
 private struct MeasureFromSection: View {
     @Binding var rawValue: String
     let isEnabled: Bool
 
+    private static let options: [PopUpOption] = [
+        PopUpOption(
+            value: "lastActive",
+            title: "Last active",
+            subtitle: "Time since you last used the window (focused for 5 seconds or more)."
+        ),
+        PopUpOption(
+            value: "opened",
+            title: "Opened",
+            subtitle: "Time since the window opened, or since WindowCleaner first saw it."
+        )
+    ]
+
     var body: some View {
         Section {
-            Picker("Measure from", selection: $rawValue) {
-                Text("Last active").tag("lastActive")
-                Text("Opened").tag("opened")
-            }
-            .disabled(!isEnabled)
-        } footer: {
-            if rawValue == "lastActive" {
-                Text("Time since you last used the window (focused for 5 seconds or more).")
-            } else {
-                Text("Time since the window opened, or since WindowCleaner first saw it.")
+            LabeledContent("Measure from") {
+                SubtitledPopUpButton(
+                    selection: $rawValue,
+                    options: Self.options,
+                    isEnabled: isEnabled
+                )
+                .frame(width: 200)
             }
         }
     }
 }
 
-/// Quit-policy picker with a footer. Hidden for the global rule and Finder.
+/// Quit-policy picker with subtitled options in the dropdown.
+/// Hidden for the global rule and Finder.
 private struct QuitPolicySection: View {
     @Binding var rawValue: String
     let isEnabled: Bool
 
+    private static let options: [PopUpOption] = [
+        PopUpOption(
+            value: "never",
+            title: "Keep app running",
+            subtitle: "The app keeps running after its windows are closed."
+        ),
+        PopUpOption(
+            value: "ifClosedByWindowCleaner",
+            title: "Quit if WindowCleaner closed it",
+            subtitle: "Quits the app after WindowCleaner closes its last window."
+        ),
+        PopUpOption(
+            value: "always",
+            title: "Always quit app",
+            subtitle: "Quits the app when it has no windows, even if you closed them yourself."
+        )
+    ]
+
     var body: some View {
         Section {
-            Picker("When the last window closes", selection: $rawValue) {
-                Text("Keep app running").tag("never")
-                Text("Quit if WindowCleaner closed it").tag("ifClosedByWindowCleaner")
-                Text("Always quit app").tag("always")
-            }
-            .disabled(!isEnabled)
-        } footer: {
-            switch rawValue {
-            case "ifClosedByWindowCleaner":
-                Text("Quits the app after WindowCleaner closes its last window.")
-            case "always":
-                Text("Quits the app when it has no windows, even if you closed them yourself.")
-            default:
-                Text("The app keeps running after its windows are closed.")
+            LabeledContent("When the last window closes") {
+                SubtitledPopUpButton(
+                    selection: $rawValue,
+                    options: Self.options,
+                    isEnabled: isEnabled
+                )
+                .frame(width: 260)
             }
         }
     }

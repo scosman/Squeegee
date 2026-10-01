@@ -231,22 +231,31 @@ There is no periodic focus sampling. Focus time is measured with event timestamp
 @main struct WindowCleanerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     var body: some Scene {
-        Window("WindowCleaner", id: "main") { MainWindowRootContent(launchState: delegate.launchState) }
-            .defaultLaunchBehavior(.suppressed)       // never auto-open; AppDelegate opens it
-            .windowResizability(.contentMinSize)
-            .commands { CommandGroup(replacing: .newItem) {} }
+        // Dormant scene — exists solely to host the Cmd-Q command override.
+        Window("WindowCleaner", id: "unused") { EmptyView() }
+            .defaultLaunchBehavior(.suppressed)
+            .commands {
+                CommandGroup(replacing: .newItem) {}
+                CommandGroup(replacing: .appTermination) {
+                    Button("Close Window") { NSApp.keyWindow?.performClose(nil) }
+                        .keyboardShortcut("q")
+                }
+            }
     }
 }
 ```
 
+**Window management — single NSWindow path.** A SwiftUI `Window` scene with `.defaultLaunchBehavior(.suppressed)` never instantiates its content, so `OpenWindowAction` is never captured. The app uses a single `NSWindow` + `NSHostingView(rootView: MainWindowRootView(...))` created by `AppDelegate`. There is no `LaunchState` or scene-based fallback — the NSWindow path is the only path.
+
 `AppDelegate` (the composition root, main actor):
 
-1. `applicationDidFinishLaunching`: build `Store(.onDisk(appSupportURL))`, then `AppCore.live(store:, ports: LivePorts())` (the ports come from `SystemBridge`). Create `StatusItemController(core:)`. Call `core.start()`. If `!store.settings.onboardingComplete`, call `showMainWindow()`.
-2. `showMainWindow()` (Biscotti pattern): `NSApp.setActivationPolicy(.regular)`, open the window through the captured `openWindow` action (a wrapper view stores it in `LaunchState`), `NSApp.activate()`, and make the window key on the next main-queue turn.
+1. `applicationDidFinishLaunching`: build `Store(.onDisk(appSupportURL))`, then `AppCore(store:, ports: LivePorts.make())`. Create `StatusItemController(core:)`. Call `core.start()`. If `!store.settings.onboardingComplete`, call `showMainWindow()`.
+2. `showMainWindow()`: `NSApp.setActivationPolicy(.regular)`, create or order-front the NSWindow, then defer `NSApp.activate(ignoringOtherApps: true)` + `makeKeyAndOrderFront` to the next run-loop turn (the cooperative `NSApp.activate()` is advisory and routinely refused for accessory apps; the deprecated `ignoringOtherApps:` variant still works on macOS 14/15/Tahoe).
 3. Observe `NSWindow.willCloseNotification` for normal-level windows. When no visible main-capable windows remain, call `NSApp.setActivationPolicy(.accessory)`.
 4. `applicationShouldHandleReopen(_:hasVisibleWindows:)` → `showMainWindow()`, return `false` (functional spec §8.3).
 5. `applicationShouldTerminateAfterLastWindowClosed` → `false`.
-6. The scene closure reads `LaunchState` in a wrapper `View` body (Biscotti gotcha: scene closures do not track Observation reliably).
+
+**Sidebar.** The `NavigationSplitView` uses `columnVisibility: .constant(.all)` and `.navigationSplitViewStyle(.balanced)`. Sidebar collapse prevention is a known open item (`.toolbar(removing: .sidebarToggle)` does not work inside `NSHostingView`).
 
 **Info.plist:** `LSUIElement = YES` (starts as a menu bar app with no Dock icon; policy switches to `.regular` only while the window is open). Bundle ID `net.scosman.windowcleaner`. There are no usage-description keys (Accessibility has none).
 

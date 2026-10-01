@@ -1,4 +1,4 @@
-import AppShellUI
+import AppKit
 import SwiftUI
 
 @main
@@ -6,18 +6,23 @@ struct WindowCleanerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
     var body: some Scene {
-        // The scene is suppressed: the main window is managed by AppDelegate
-        // via NSWindow + NSHostingView (see showMainWindowDirectly). This
-        // avoids a chicken-and-egg with OpenWindowAction — the suppressed
-        // scene never instantiates its content, so the environment action
-        // is never captured. The scene declaration is kept as a dormant
-        // fallback in case the action is captured through another path.
-        Window("WindowCleaner", id: "main") {
-            MainWindowRootContent(launchState: delegate.launchState)
+        // This scene exists solely to host the command overrides below.
+        // The window is suppressed; AppDelegate manages the window directly
+        // via NSWindow + NSHostingView (architecture section 6).
+        Window("WindowCleaner", id: "unused") {
+            EmptyView()
         }
         .defaultLaunchBehavior(.suppressed)
-        .windowResizability(.contentMinSize)
-        .defaultSize(width: 760, height: 540)
-        .commands { CommandGroup(replacing: .newItem) {} }
+        .commands {
+            CommandGroup(replacing: .newItem) {}
+            // Override Cmd-Q: close the window instead of quitting.
+            // Quitting is only via the menu bar "Quit WindowCleaner" item.
+            CommandGroup(replacing: .appTermination) {
+                Button("Close Window") {
+                    NSApp.keyWindow?.performClose(nil)
+                }
+                .keyboardShortcut("q")
+            }
+        }
     }
 }

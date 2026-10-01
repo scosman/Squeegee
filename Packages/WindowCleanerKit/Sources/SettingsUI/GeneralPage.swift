@@ -25,9 +25,9 @@ struct GeneralPage: View {
 
     private var statusSection: some View {
         Section("Status") {
-            // Accessibility
+            // Accessibility Permission
             HStack {
-                Text("Accessibility")
+                Text("Accessibility Permission")
                 Spacer()
                 if core.permission == .granted {
                     Label("Granted", systemImage: "checkmark.circle.fill")
@@ -45,9 +45,9 @@ struct GeneralPage: View {
                 }
             }
 
-            // Closures status
+            // Pause State
             HStack {
-                Text("Closures")
+                Text("Pause State")
                 Spacer()
                 if core.isPaused {
                     HStack(spacing: 8) {
@@ -65,22 +65,18 @@ struct GeneralPage: View {
                         }
                     }
                 } else {
-                    HStack(spacing: 8) {
-                        Text("Active")
-                            .foregroundStyle(.secondary)
-                            .font(.callout)
-                        Menu("Pause") {
-                            Button("For 1 Hour") {
-                                core.pause(.oneHour)
-                            }
-                            Button("Until Tomorrow") {
-                                core.pause(.untilTomorrow)
-                            }
-                            Button("Until Resumed") {
-                                core.pause(.untilResumed)
-                            }
+                    Menu("Pause") {
+                        Button("For 1 Hour") {
+                            core.pause(.oneHour)
+                        }
+                        Button("Until Tomorrow") {
+                            core.pause(.untilTomorrow)
+                        }
+                        Button("Until Resumed") {
+                            core.pause(.untilResumed)
                         }
                     }
+                    .fixedSize()
                 }
             }
         }
@@ -124,6 +120,8 @@ struct GeneralPage: View {
             Text("Menu Bar")
         } footer: {
             Text("When the icon is hidden, open WindowCleaner again from Finder or Spotlight to show this window.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
     }
 

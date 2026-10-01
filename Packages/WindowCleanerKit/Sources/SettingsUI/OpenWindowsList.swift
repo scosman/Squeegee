@@ -1,5 +1,6 @@
 import AppCore
 import Engine
+import Persistence
 import Presentation
 import SharedUI
 import SwiftUI
@@ -47,6 +48,30 @@ struct OpenWindowsList: View {
             Text(statusText)
                 .foregroundStyle(.secondary)
                 .font(.callout)
+
+            // For the global rule, offer a "+" button to create an
+            // app-specific rule for this window's app.
+            if case .globalRule = selection, !hasAppRule(for: schedule.bundleID) {
+                Button {
+                    addAppRule(bundleID: schedule.bundleID, appName: schedule.appName)
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .buttonStyle(.borderless)
+                .help("Add rule for \(schedule.appName)")
+            }
         }
+    }
+
+    // MARK: - Helpers
+
+    private func hasAppRule(for bundleID: String) -> Bool {
+        core.store.appRule(bundleID: bundleID) != nil
+    }
+
+    private func addAppRule(bundleID: String, appName: String) {
+        core.store.addAppRule(bundleID: bundleID, appName: appName, rule: .newAppRuleDefault)
+        core.store.save()
+        core.open(.appRule(bundleID: bundleID))
     }
 }

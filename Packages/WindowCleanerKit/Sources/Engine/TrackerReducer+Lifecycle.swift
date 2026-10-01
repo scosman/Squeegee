@@ -129,6 +129,28 @@ extension TrackerReducer {
         return []
     }
 
+    // MARK: - Stale close resolution
+
+    // Safety net: if a window has been in `.sent` state for longer than the
+    // close-verification delay and a window-list scan still sees it, the
+    // scheduled verification callback may have failed to fire. Resolve these
+    // windows the same way `handleCloseVerification` would.
+    // swiftlint:disable:next identifier_name
+    static func resolveStaleCloses(_ state: inout TrackerState, at: Date) {
+        for key in state.windows.keys {
+            guard let window = state.windows[key],
+                  case let .sent(sentAt, wasListed) = window.closeState,
+                  at.timeIntervalSince(sentAt) > Tracker.closeVerificationDelay
+            else { continue }
+
+            if wasListed {
+                state.windows[key]?.closeState = .declined(at: at)
+            } else {
+                state.windows[key]?.closeState = .unreachable(since: at)
+            }
+        }
+    }
+
     // MARK: - Shared helpers
 
     // Ends the current focus session. If it qualifies (>= 5 s),

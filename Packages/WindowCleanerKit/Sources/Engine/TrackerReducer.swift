@@ -53,6 +53,7 @@ public enum TrackerReducer {
 
         insertNewWindows(&state, observed: observed, at: at)
         removeMissingWindows(&state, observedKeys: observedKeys, at: at, outputs: &outputs)
+        resolveStaleCloses(&state, at: at)
         collectInspectionNeeds(state, outputs: &outputs)
         recomputePresence(&state, at: at)
 

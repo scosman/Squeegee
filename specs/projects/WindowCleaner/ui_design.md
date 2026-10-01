@@ -29,6 +29,7 @@ Visual and interaction design for the behavior in `functional_spec.md`. Section 
 
 - **One app window**, with two routes: Onboarding (until complete) and Settings. The same pattern as Biscotti's main window.
 - **Dock presence:** WindowCleaner is menu bar only. While the app window is open, it shows in the Dock and Cmd-Tab. When the window closes, it goes back to menu bar only.
+- **Cmd-Q** closes the main window (same as clicking the close button) instead of quitting the app. Quitting is only via the menu bar "Quit WindowCleaner" item.
 - Opening the app again (Finder, Spotlight, Launchpad) while it runs opens the app window at the Settings route (§8.3). During onboarding, it opens the onboarding.
 
 ## 3. Menu Bar
@@ -97,7 +98,7 @@ The menu is built when it opens. Times do not update while it is open (they have
 
 ## 4. App Window — Settings Route
 
-A standard single window titled "WindowCleaner". Default size 760×540, minimum 640×440, resizable. `NavigationSplitView` with a sidebar (about 220 pt) and a detail pane.
+A standard single window titled "WindowCleaner". Default size 760×540, minimum 640×440, resizable. `NavigationSplitView` with a sidebar (about 220 pt) and a detail pane. Sidebar collapse prevention is a known open item.
 
 ### 4.1 Sidebar
 
@@ -113,19 +114,19 @@ RULES                          ← section header
 💬 Messages
   4h · last active
 …
-[+ ▾] [−]                      ← bottom bar
+[+]                             ← bottom bar (no chevron, no −)
 ```
 
 - **General** row: `gearshape` symbol.
 - **All other apps:** always the first rule row. Symbol `square.stack`. Subtitle is the rule summary (§7).
 - **App rows:** app icon (20 pt), app name, rule summary subtitle. Sorted by app name. Disabled rules show "Off".
-- **Bottom bar** (standard +/− buttons):
-  - **+** is a menu button:
-    - **Running Apps** ▸ submenu: running regular apps that have no app rule, with icons, sorted by name.
+- **Bottom bar** (+ button only, no chevron indicator):
+  - **+** is a menu button (no menu indicator chevron):
+    - **Running Apps** ▸ submenu: running regular apps that have no app rule, sorted by name. The list is queried fresh each time the menu opens.
     - **Choose App…**: an open panel in `/Applications` that accepts only `.app` bundles.
     - divider
     - **Suggested Rules…**: opens the Suggestions sheet (§4.5).
-  - **−** removes the selected app rule. It is disabled when General or All other apps is selected. The Delete key does the same. Removal is a rule change like any other: the app goes back to the global rule, which can close its windows (for example, when the removed rule was "off" and the global rule is on). V1 has no confirmation; the P2 "This rule calls for N open windows to be closed" confirmation (functional spec §13) applies to removals too.
+  - There is no **−** button. Rule removal is via the **Remove Rule** button on the rule page, or via the Delete key. Both ask for confirmation naming the app ("Remove the rule for Finder? The app will use the global rule.").
 - A new app rule starts with: enabled, 6 hours, Last active, Keep app running. The new row is selected.
 - If the user adds an app that already has a rule, that rule is selected (no duplicate).
 - The selection is restored when the window reopens.
@@ -136,9 +137,9 @@ A grouped `Form`.
 
 | Section | Rows |
 |---|---|
-| Status | **Accessibility:** "✓ Granted" (secondary text) or "Not granted" + **Open System Settings** button. **Closures:** "Active" + **Pause ▾** menu button (same options as §3.2), or "Paused until 3:40 PM" + **Resume** button. |
+| Status | **Accessibility Permission:** "✓ Granted" (secondary text) or "Not granted" + **Open System Settings** button. **Pause State:** **Pause ▾** menu button (same options as §3.2), sized to content (`.fixedSize()`), when not paused (no "Active" status text), or "Paused until 3:40 PM" / "Paused" status text + **Resume** button when paused. |
 | Startup | **Launch at login** toggle. |
-| Menu Bar | **Show menu bar icon** toggle. Footer: "When the icon is hidden, open WindowCleaner again from Finder or Spotlight to show this window." |
+| Menu Bar | **Show menu bar icon** toggle. Footer (caption2 size, tertiary color): "When the icon is hidden, open WindowCleaner again from Finder or Spotlight to show this window." |
 | About | Version (e.g. "Version 1.0 (42)") and a link to the project site. |
 
 ### 4.3 Rule page
@@ -152,10 +153,10 @@ Close windows automatically            [ ON ]
 
 Close after                        [ 6 hours ▾]
 Measure from                   [ Last active ▾]
-  footer: "Time since you last used the window (focused for 5 seconds or more)."
+  (each option has a subtitle in the dropdown)
 
 When the last window closes   [ Keep app running ▾]
-  footer: (explains the selected option)
+  (each option has a subtitle in the dropdown)
 
 OPEN WINDOWS (3)
 Downloads                              in 2h 10m
@@ -168,12 +169,12 @@ Screenshots                   waiting — in use
 - **Header:** app icon (48 pt) and app name. For the global rule: `square.stack` symbol, "All other apps", and the subtitle "Applies to every app that doesn't have its own rule."
 - **Close windows automatically:** a toggle. When off, the sections below it are disabled (dimmed), and the Open Windows times show "Won't close".
 - **Close after:** a pop-up menu: 30 minutes, 1 hour, 2 hours, 4 hours, 6 hours, 12 hours, 1 day, 2 days, 1 week, divider, Custom…. When Custom is selected, a row shows below it with **hours** and **minutes** fields plus steppers. The range is limited to 5 minutes – 30 days, and the value is clamped when the field loses focus. If a saved value is not a preset, the pop-up shows "Custom" and the custom row is visible.
-- **Measure from:** a pop-up menu with **Last active** and **Opened**. The footer explains the selected option:
+- **Measure from:** a pop-up menu with **Last active** and **Opened**. Each option has an `NSMenuItem.subtitle` in the dropdown:
   - Last active: "Time since you last used the window (focused for 5 seconds or more)."
   - Opened: "Time since the window opened, or since WindowCleaner first saw it."
-- **When the last window closes:** a pop-up menu with **Keep app running**, **Quit if WindowCleaner closed it**, **Always quit app**. The footer explains the selected option. This section is **hidden** for the global rule and for Finder.
-- **Open Windows (N):** a read-only list of this app's managed windows (for the global rule: all windows covered by it, with the app icon on each row). Each row: window title (app name if there is no title) and time left, with the same text as the menu (§7). Sorted by time left. It updates live (once per minute, and immediately when the rule changes). Empty: "No open windows". No per-window actions.
-- **Remove Rule:** a button at the bottom (app rules only). It does the same as the sidebar − button.
+- **When the last window closes:** a pop-up menu with **Keep app running**, **Quit if WindowCleaner closed it**, **Always quit app**. Each option has an `NSMenuItem.subtitle` in the dropdown. This section is **hidden** for the global rule and for Finder.
+- **Open Windows (N):** a read-only list of this app's managed windows (for the global rule: all windows covered by it, with the app icon on each row). Each row: window title (app name if there is no title) and time left, with the same text as the menu (§7). Sorted by time left. It updates live (once per minute, and immediately when the rule changes). Empty: "No open windows". For the global rule, each row has a trailing **+** button that creates an app-specific rule for that window's app and selects it (the button does not appear if the app already has a rule).
+- **Remove Rule:** a button at the bottom (app rules only). Asks for confirmation naming the app before removing ("Remove the rule for [App Name]?" / "The app will use the global rule." / Cancel + Remove). The confirmation is a custom SwiftUI `.sheet` (not `.confirmationDialog` or `.alert`, because both macOS system presentations render as an NSAlert panel that shows the app icon).
 - All changes apply immediately. There is no Save button (§4.2 of the functional spec).
 
 ### 4.4 Permission banner

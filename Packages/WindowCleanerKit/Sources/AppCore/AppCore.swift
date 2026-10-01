@@ -96,6 +96,11 @@ public final class AppCore {
     private var executorTask: Task<Void, Never>?
     private var executorQueue: [PlannedAction] = []
 
+    /// Retained handles for one-shot verification timers. Without these
+    /// the `DispatchSourceCancellable` is released immediately and GCD
+    /// *may* drop the source on some OS versions before it fires.
+    private var verificationTimers: [any Engine.Cancellable] = []
+
     // MARK: - Constants
 
     private static let scanInterval: TimeInterval = 60
@@ -682,19 +687,30 @@ extension AppCore {
     }
 
     private func scheduleVerificationScans(key: WindowKey, at closeTime: Date) {
+        // Cap retained handles to avoid unbounded growth. Each close adds
+        // two one-shot timers (2s + 10s). Dropping old entries is safe
+        // because GCD retains a resumed DispatchSource internally; the
+        // handle here is only a keep-alive for edge-case OS scheduling.
+        if verificationTimers.count > 20 {
+            verificationTimers.removeFirst(verificationTimers.count - 20)
+        }
+
         // Scan at +2s
         let scan2 = closeTime.addingTimeInterval(Self.closeVerificationScanDelay)
-        _ = ports.scheduler.schedule(at: scan2, tolerance: 1) { [weak self] in
+        let timer2 = ports.scheduler.schedule(at: scan2, tolerance: 1) { [weak self] in
             Task { await self?.scan() }
         }
+        verificationTimers.append(timer2)
+
         // Scan at +10s, then verification
         let scan10 = closeTime.addingTimeInterval(Tracker.closeVerificationDelay)
-        _ = ports.scheduler.schedule(at: scan10, tolerance: 1) { [weak self] in
+        let timer10 = ports.scheduler.schedule(at: scan10, tolerance: 1) { [weak self] in
             Task {
                 await self?.scan()
                 self?.reduce(.closeVerification(key, at: self?.ports.scheduler.now() ?? scan10))
             }
         }
+        verificationTimers.append(timer10)
     }
 }
 

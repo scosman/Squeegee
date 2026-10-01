@@ -1,1 +1,1 @@
-// AppShellUI module — MainWindowRootView, LaunchState, route switch
+// AppShellUI module — MainWindowRootView, WindowChromeModifier, route switch

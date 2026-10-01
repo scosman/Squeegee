@@ -231,7 +231,7 @@ The app window is in practice only settings. This section lists its **functional
 - A list: "All other apps" (the global rule) at the top, then all app rules sorted by app name, with icon and a rule summary.
 - Selecting a row shows the rule editor (§4.1 fields).
 - **Add app** (+): choose from running apps or pick an app from Finder.
-- **Remove** an app rule (the app goes back to the global rule).
+- **Remove** an app rule (the app goes back to the global rule). Removal asks for confirmation naming the app.
 - **Add suggested rules:** opens the Suggestions view (§7.1).
 
 ### 10.3 About

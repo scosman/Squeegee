@@ -505,3 +505,46 @@ private func key(_ pid: Int32 = 1, _ windowID: UInt32 = 100) -> WindowKey {
     // Non-standard sibling should not prevent the quit flag
     #expect(state.apps[1]?.quitAfterWindowCleanerClose == true)
 }
+
+// MARK: - Test 20: Stale close resolution — sent state resolved by scan
+
+@Test func staleCloseSent_wasListedTrue_resolvedToDeclined() {
+    var state = TrackerState()
+    let observed = makeObservedWindow()
+    _ = TrackerReducer.reduce(&state, .windowList([observed], at: t0))
+    _ = TrackerReducer.reduce(&state, .inspected(
+        pid: 1,
+        .inspected([100: WindowMetadata(isStandard: true, title: "Doc")]),
+        at: t0
+    ))
+
+    // Mark as close sent (wasListed = true)
+    _ = TrackerReducer.reduce(&state, .closeSent(key(), wasListed: true, latest: nil, at: date(100)))
+    #expect(state.windows[key()]?.closeState == .sent(at: date(100), wasListed: true))
+
+    // Scan arrives before verification delay — closeState stays .sent
+    _ = TrackerReducer.reduce(&state, .windowList([observed], at: date(105)))
+    #expect(state.windows[key()]?.closeState == .sent(at: date(100), wasListed: true))
+
+    // Scan arrives after verification delay (10 s) — stale close resolved to .declined
+    _ = TrackerReducer.reduce(&state, .windowList([observed], at: date(112)))
+    #expect(state.windows[key()]?.closeState == .declined(at: date(112)))
+}
+
+@Test func staleCloseSent_wasListedFalse_resolvedToUnreachable() {
+    var state = TrackerState()
+    let observed = makeObservedWindow()
+    _ = TrackerReducer.reduce(&state, .windowList([observed], at: t0))
+    _ = TrackerReducer.reduce(&state, .inspected(
+        pid: 1,
+        .inspected([100: WindowMetadata(isStandard: true, title: "Doc")]),
+        at: t0
+    ))
+
+    // Mark as close sent (wasListed = false — e.g. window on another Space)
+    _ = TrackerReducer.reduce(&state, .closeSent(key(), wasListed: false, latest: nil, at: date(100)))
+
+    // Scan arrives after verification delay — stale close resolved to .unreachable
+    _ = TrackerReducer.reduce(&state, .windowList([observed], at: date(112)))
+    #expect(state.windows[key()]?.closeState == .unreachable(since: date(112)))
+}
