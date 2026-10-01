@@ -10,7 +10,7 @@
 </a>
 </div>
 
-A native macOS menu bar app that closes stale windows. Set per-app rules ("close Finder windows 6 hours after I last used them"), and WindowCleaner closes each window when its time is up. It works per **window**, not per process: closing one stale Finder window leaves the other Finder windows open.
+A native macOS menu bar app that closes stale windows. Set per-app rules ("close Finder windows 6 hours after I last used them", "Quit Quicktime when last window closes", etc), and Squeegee closes each window when its time is up. It works per **window**, not per process: closing one stale Finder window leaves the other Finder windows open.
 
 ## Features
 
