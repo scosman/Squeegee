@@ -26,7 +26,7 @@ Build the MenuBarUI module: StatusItemController (owns the NSStatusItem, drives 
 
 - `footerPauseSubmenu`: the footer section has a "Pause" item with a submenu containing three options; Settings and Quit are sibling items.
 - `pauseSubmenuCheckmarks`: when paused, the correct submenu child has `isChecked == true`.
-- `rendererBasicMenu`: render a MenuContent with Up Next and Recently Closed; assert NSMenu item structure.
+- `rendererBasicMenu`: render a MenuContent with Closing Next and Recently Closed; assert NSMenu item structure.
 - `rendererSectionHeaders`: section headers render as `NSMenuItem.sectionHeader`.
 - `rendererSubtitles`: items with subtitles have `NSMenuItem.subtitle` set.
 - `rendererSubmenu`: a MenuItem with submenu children produces an NSMenuItem with a submenu NSMenu.

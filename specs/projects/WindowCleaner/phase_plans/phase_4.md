@@ -37,7 +37,7 @@ This phase builds two modules that Phase 3 left as stubs: **Persistence** (Swift
    - `formatTimeLeft(deadline:now:) -> String` — e.g. "in 2h 10m", "in <1m"
    - `formatTimeAgo(date:now:calendar:) -> String` — e.g. "just now", "20m ago", "yesterday", "Sep 12"
    - `formatPausedUntil(date:now:calendar:) -> String` — e.g. "Paused until 3:40 PM"
-   - `formatScheduleStatus(_:deadline:now:) -> String` — status text for Up Next and Open Windows
+   - `formatScheduleStatus(_:deadline:now:) -> String` — status text for Closing Next and Open Windows
 
 5. **Rule summaries** (`Presentation/RuleSummary.swift`): Two formats:
    - `sidebarSummary(rule:) -> String` — "6h . last active", "Off", "2h . opened . quits"

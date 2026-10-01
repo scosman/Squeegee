@@ -33,7 +33,7 @@ struct MenuRendererTests {
 
     @Test func rendererBasicMenu() {
         let content = makeContent(sections: [
-            MenuSection(header: "Up Next", items: [
+            MenuSection(header: "Closing Next", items: [
                 MenuItem(
                     title: "Downloads",
                     subtitle: "Finder \u{00B7} in 2h 10m",
@@ -69,14 +69,14 @@ struct MenuRendererTests {
 
     @Test func rendererSectionHeaders() {
         let content = makeContent(sections: [
-            MenuSection(header: "Up Next", items: [
+            MenuSection(header: "Closing Next", items: [
                 MenuItem(title: "Test", isEnabled: false)
             ])
         ])
         let menu = MenuRenderer.render(content, target: target, action: action)
         let items = visibleItems(menu)
         // First visible item should be the section header
-        #expect(items[0].title == "Up Next")
+        #expect(items[0].title == "Closing Next")
         // Section header has no action (not interactive)
         #expect(items[0].action == nil)
     }
@@ -370,7 +370,7 @@ struct MenuRendererPopulateTests {
         let menu = NSMenu()
         menu.autoenablesItems = false
         let content = makeContent(sections: [
-            MenuSection(header: "Up Next", items: [
+            MenuSection(header: "Closing Next", items: [
                 MenuItem(title: "Window 1", isEnabled: false)
             ]),
             MenuSection(items: [

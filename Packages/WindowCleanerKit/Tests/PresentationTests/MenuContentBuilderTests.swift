@@ -52,11 +52,11 @@ private func makeSchedule(
     )
 }
 
-// MARK: - Up Next & Recently Closed
+// MARK: - Closing Next & Recently Closed
 
 @Suite("MenuContentBuilder — Sections")
 struct MenuContentBuilderSectionTests {
-    // MARK: - Up Next
+    // MARK: - Closing Next
 
     @Test func upNextWithSchedules() throws {
         let schedules = [
@@ -64,7 +64,7 @@ struct MenuContentBuilderSectionTests {
             makeSchedule(appName: "QuickTime", title: "trailer.mov", deadline: testNow.addingTimeInterval(3 * 3600 + 5 * 60))
         ]
         let content = MenuContentBuilder.build(input: defaultInput(schedules: schedules))
-        let upNext = try #require(content.sections.first(where: { $0.header == "Up Next" }))
+        let upNext = try #require(content.sections.first(where: { $0.header == "Closing Next" }))
         #expect(upNext.items.count == 2)
         #expect(upNext.items[0].title == "Downloads")
         #expect(upNext.items[0].subtitle?.contains("in 2h 10m") == true)
@@ -73,7 +73,7 @@ struct MenuContentBuilderSectionTests {
 
     @Test func upNextEmpty() throws {
         let content = MenuContentBuilder.build(input: defaultInput())
-        let upNext = try #require(content.sections.first(where: { $0.header == "Up Next" }))
+        let upNext = try #require(content.sections.first(where: { $0.header == "Closing Next" }))
         #expect(upNext.items.count == 1)
         #expect(upNext.items[0].title == "No windows scheduled to close")
         #expect(upNext.items[0].subtitle == "Add rules in Settings")
@@ -85,7 +85,7 @@ struct MenuContentBuilderSectionTests {
             makeSchedule(appName: "App\(idx)", title: "W\(idx)", deadline: testNow.addingTimeInterval(TimeInterval(idx) * 60 + 60))
         }
         let content = MenuContentBuilder.build(input: defaultInput(schedules: schedules))
-        let upNext = try #require(content.sections.first(where: { $0.header == "Up Next" }))
+        let upNext = try #require(content.sections.first(where: { $0.header == "Closing Next" }))
         // 8 windows + "2 more" row
         #expect(upNext.items.count == 9)
         #expect(upNext.items.last?.title == "2 more")
@@ -99,7 +99,7 @@ struct MenuContentBuilderSectionTests {
             makeSchedule(title: "Kept", status: .keptOpen)
         ]
         let content = MenuContentBuilder.build(input: defaultInput(schedules: schedules))
-        let upNext = try #require(content.sections.first(where: { $0.header == "Up Next" }))
+        let upNext = try #require(content.sections.first(where: { $0.header == "Closing Next" }))
         #expect(upNext.items.count == 1)
         #expect(upNext.items[0].title == "Visible")
     }
@@ -109,7 +109,7 @@ struct MenuContentBuilderSectionTests {
             makeSchedule(bundleID: "com.apple.finder", status: .scheduled)
         ]
         let content = MenuContentBuilder.build(input: defaultInput(schedules: schedules))
-        let upNext = try #require(content.sections.first(where: { $0.header == "Up Next" }))
+        let upNext = try #require(content.sections.first(where: { $0.header == "Closing Next" }))
         if case let .openRule(bundleID, _) = upNext.items[0].action {
             #expect(bundleID == "com.apple.finder")
         } else {
@@ -200,9 +200,9 @@ struct MenuContentBuilderBannerFooterTests {
         }
     }
 
-    @Test func permissionMissingUpNextPaused() throws {
+    @Test func permissionMissingClosingNextPaused() throws {
         let content = MenuContentBuilder.build(input: defaultInput(hasPermission: false))
-        let upNext = try #require(content.sections.first(where: { $0.header == "Up Next" }))
+        let upNext = try #require(content.sections.first(where: { $0.header == "Closing Next" }))
         #expect(upNext.items[0].title.contains("needs Accessibility"))
     }
 

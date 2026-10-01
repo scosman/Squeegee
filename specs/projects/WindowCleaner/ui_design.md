@@ -30,6 +30,8 @@ Visual and interaction design for the behavior in `functional_spec.md`. Section 
 - **One app window**, with two routes: Onboarding (until complete) and Settings. The same pattern as Biscotti's main window.
 - **Dock presence:** WindowCleaner is menu bar only. While the app window is open, it shows in the Dock and Cmd-Tab. When the window closes, it goes back to menu bar only.
 - **Cmd-Q** closes the main window (same as clicking the close button) instead of quitting the app. Quitting is only via the menu bar "Quit WindowCleaner" item.
+- **User-initiated launch** (Dock, Finder, Spotlight, Launchpad, `open`, Xcode Run) opens the app window at the current route (Settings after onboarding; Onboarding before). This applies to both cold launch and reopen while running.
+- **Login-item launch** (system starts the app at login via `SMAppService.mainApp`) is silent: menu bar only, no window. Detected via `keyAELaunchedAsLogInItem` in the `kAEOpenApplication` Apple event.
 - Opening the app again (Finder, Spotlight, Launchpad) while it runs opens the app window at the Settings route (§8.3). During onboarding, it opens the onboarding.
 
 ## 3. Menu Bar
@@ -53,7 +55,7 @@ A native `NSMenu` (standard menu, not a custom panel). Rows use a title plus a *
 [Paused until 3:40 PM]  (disabled)       ← only if paused
 [Resume]                                 ← only if paused
 ─────────────
-Up Next                                  ← section header
+Closing Next                             ← section header
 📁 Downloads
    Finder · in 2h 10m
 🎬 trailer.mov
@@ -79,7 +81,7 @@ Quit WindowCleaner                ⌘Q
 
 | Row | Title | Subtitle | Click action |
 |---|---|---|---|
-| Up Next | window title (app name if no title) | `App · in 2h 10m`; `App · waiting — in use` if past deadline and focused | Open app window at this app's rule (or "All other apps" if the global rule covers it) |
+| Closing Next | window title (app name if no title) | `App · in 2h 10m`; `App · waiting — in use` if past deadline and focused | Open app window at this app's rule (or "All other apps" if the global rule covers it) |
 | Recently Closed — window with URL | window title | `App · 20m ago` | **Reopen** the document (§9) |
 | Recently Closed — window without URL | window title | `App · 20m ago` | Open (activate or launch) the app |
 | Recently Closed — app quit | app name | `Quit · 2h ago` | Launch the app |
@@ -89,9 +91,9 @@ Every clickable Recently Closed row has a tooltip that states what the click doe
 
 **States**
 
-- **Permission missing:** the top item "Accessibility Access Needed…" opens System Settings → Privacy & Security → Accessibility. The Up Next section shows one disabled row: "Paused — needs Accessibility access". Recently Closed still shows.
-- **Paused:** the top shows "Paused until 3:40 PM" (or "Paused" for until-resumed) and a **Resume** item. Up Next still lists windows and times, so the user can see what will close after the pause ends. In the Pause submenu, the active option has a checkmark.
-- **Empty Up Next:** one disabled row, "No windows scheduled to close". Subtitle: "Add rules in Settings".
+- **Permission missing:** the top item "Accessibility Access Needed…" opens System Settings → Privacy & Security → Accessibility. The Closing Next section shows one disabled row: "Paused — needs Accessibility access". Recently Closed still shows.
+- **Paused:** the top shows "Paused until 3:40 PM" (or "Paused" for until-resumed) and a **Resume** item. Closing Next still lists windows and times, so the user can see what will close after the pause ends. In the Pause submenu, the active option has a checkmark.
+- **Empty Closing Next:** one disabled row, "No windows scheduled to close". Subtitle: "Add rules in Settings".
 - **Empty Recently Closed:** one disabled row, "Nothing closed yet".
 
 The menu is built when it opens. Times do not update while it is open (they have minute granularity).

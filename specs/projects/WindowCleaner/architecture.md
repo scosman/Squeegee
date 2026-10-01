@@ -249,7 +249,7 @@ There is no periodic focus sampling. Focus time is measured with event timestamp
 
 `AppDelegate` (the composition root, main actor):
 
-1. `applicationDidFinishLaunching`: build `Store(.onDisk(appSupportURL))`, then `AppCore(store:, ports: LivePorts.make())`. Create `StatusItemController(core:)`. Call `core.start()`. If `!store.settings.onboardingComplete`, call `showMainWindow()`.
+1. `applicationDidFinishLaunching`: build `Store(.onDisk(appSupportURL))`, then `AppCore(store:, ports: LivePorts.make())`. Create `StatusItemController(core:)`. Check `isLaunchedAsLoginItem()` (reads `keyAELaunchedAsLogInItem` from the `kAEOpenApplication` Apple event). Call `core.start()`. If the launch is user-initiated (not a login item), call `showMainWindow()`. Login-item launches start silently — menu bar only, no window.
 2. `showMainWindow()`: `NSApp.setActivationPolicy(.regular)`, create or order-front the NSWindow, then defer `NSApp.activate(ignoringOtherApps: true)` + `makeKeyAndOrderFront` to the next run-loop turn (the cooperative `NSApp.activate()` is advisory and routinely refused for accessory apps; the deprecated `ignoringOtherApps:` variant still works on macOS 14/15/Tahoe).
 3. Observe `NSWindow.willCloseNotification` for normal-level windows. When no visible main-capable windows remain, call `NSApp.setActivationPolicy(.accessory)`.
 4. `applicationShouldHandleReopen(_:hasVisibleWindows:)` → `showMainWindow()`, return `false` (functional spec §8.3).

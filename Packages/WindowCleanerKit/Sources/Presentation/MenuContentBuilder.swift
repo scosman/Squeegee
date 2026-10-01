@@ -59,8 +59,8 @@ public struct MenuContentInput: Sendable {
 /// Builds a `MenuContent` value tree from the current app state.
 /// Pure function: no side effects or system calls.
 public enum MenuContentBuilder {
-    /// Maximum items shown in Up Next.
-    static let maxUpNext = 8
+    /// Maximum items shown in Closing Next.
+    static let maxClosingNext = 8
     /// Maximum items shown in Recently Closed.
     static let maxRecentlyClosed = 8
 
@@ -73,8 +73,8 @@ public enum MenuContentBuilder {
             sections.append(MenuSection(items: bannerItems))
         }
 
-        // Up Next
-        sections.append(buildUpNextSection(input: input))
+        // Closing Next
+        sections.append(buildClosingNextSection(input: input))
 
         // Recently Closed
         sections.append(buildRecentlyClosedSection(input: input))
@@ -112,15 +112,15 @@ public enum MenuContentBuilder {
         return items
     }
 
-    // MARK: - Up Next
+    // MARK: - Closing Next
 
-    private static func buildUpNextSection(input: MenuContentInput) -> MenuSection {
+    private static func buildClosingNextSection(input: MenuContentInput) -> MenuSection {
         // Filter to active statuses only
         let activeStatuses: Set<ScheduleStatus> = [.scheduled, .dueInUse, .duePaused, .dueUnreachable, .closing]
         let visible = input.schedules.filter { activeStatuses.contains($0.status) }
 
         if !input.hasPermission {
-            return MenuSection(header: "Up Next", items: [
+            return MenuSection(header: "Closing Next", items: [
                 MenuItem(
                     title: "Paused \u{2014} needs Accessibility access",
                     isEnabled: false
@@ -129,7 +129,7 @@ public enum MenuContentBuilder {
         }
 
         guard !visible.isEmpty else {
-            return MenuSection(header: "Up Next", items: [
+            return MenuSection(header: "Closing Next", items: [
                 MenuItem(
                     title: "No windows scheduled to close",
                     subtitle: "Add rules in Settings",
@@ -138,7 +138,7 @@ public enum MenuContentBuilder {
             ])
         }
 
-        let shown = Array(visible.prefix(maxUpNext))
+        let shown = Array(visible.prefix(maxClosingNext))
         var items = shown.map { schedule -> MenuItem in
             let title = schedule.title ?? schedule.appName
             let statusText = TimeFormatting.formatScheduleStatus(
@@ -157,7 +157,7 @@ public enum MenuContentBuilder {
             )
         }
 
-        let remaining = visible.count - maxUpNext
+        let remaining = visible.count - maxClosingNext
         if remaining > 0 {
             items.append(MenuItem(
                 title: "\(remaining) more",
@@ -165,7 +165,7 @@ public enum MenuContentBuilder {
             ))
         }
 
-        return MenuSection(header: "Up Next", items: items)
+        return MenuSection(header: "Closing Next", items: items)
     }
 
     // MARK: - Recently Closed

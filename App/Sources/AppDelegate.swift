@@ -9,6 +9,22 @@ import SystemBridge
 
 private let logger = Logger(subsystem: "net.scosman.windowcleaner", category: "AppDelegate")
 
+/// Reads the `keyAELaunchedAsLogInItem` ('lgit') descriptor from the
+/// current `kAEOpenApplication` Apple event.
+///
+/// Must be called during `applicationDidFinishLaunching` — the event is
+/// only accessible synchronously within AppKit's launch notifications.
+/// Returns `nil` when the descriptor is absent. See `LaunchClassifier`
+/// for how that maps to a launch kind.
+private func readLoginItemDescriptor() -> Bool? {
+    guard let event = NSAppleEventManager.shared().currentAppleEvent else {
+        return nil
+    }
+    return event.paramDescriptor(
+        forKeyword: AEKeyword(keyAELaunchedAsLogInItem)
+    )?.booleanValue
+}
+
 /// The composition root. Creates the Store, ports, and AppCore, then starts
 /// the engine. Manages the main window's visibility and the app's activation
 /// policy (architecture section 6).
@@ -31,62 +47,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         logger.info("applicationDidFinishLaunching")
-        let storeURL = appSupportURL()
-        let store: Store
-        do {
-            store = try Store(configuration: .onDisk(storeURL))
-        } catch {
-            logger.error("Failed to open store: \(error.localizedDescription, privacy: .public)")
-            // Architecture section 7: show Quit and Reset Data.
-            let alert = NSAlert()
-            alert.messageText = "WindowCleaner couldn\u{2019}t open its data."
-            alert.informativeText = error.localizedDescription
-            alert.addButton(withTitle: "Quit")
-            alert.addButton(withTitle: "Reset Data")
-            let response = alert.runModal()
-            if response == .alertSecondButtonReturn {
-                resetStoreAndRelaunch(at: storeURL)
-            }
-            NSApp.terminate(nil)
-            return
-        }
+
+        guard let store = openStoreOrTerminate() else { return }
 
         let ports = LivePorts.make()
         let appCore = AppCore(store: store, ports: ports)
         core = appCore
 
-        // Wire the show-main-window callback
         appCore.showMainWindow = { [weak self] in
             self?.showMainWindow()
         }
-
-        // Create the status item controller (menu bar icon)
         statusItemController = StatusItemController(core: appCore)
-
-        // Observe window close to manage activation policy
-        windowObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            // Defer the check to the next run loop turn so the window list
-            // is up to date after the close completes.
-            DispatchQueue.main.async {
-                self?.checkActivationPolicy()
-            }
-        }
+        observeWindowClose()
 
         #if DEBUG
             registerSelfCheckObservers()
         #endif
+
+        // Classify this launch before starting the engine; the Apple
+        // event descriptor is only valid during applicationDidFinishLaunching.
+        let descriptorValue = readLoginItemDescriptor()
+        let launchKind = LaunchClassifier.classify(
+            loginItemDescriptorValue: descriptorValue
+        )
+        let kindLabel = launchKind == .user ? "user" : "loginItem"
+        let descriptorLabel = descriptorValue.map { String($0) } ?? "nil"
+        logger.info(
+            "Launch classified: kind=\(kindLabel, privacy: .public), descriptor=\(descriptorLabel, privacy: .public)"
+        )
 
         // Start the engine
         Task { @MainActor in
             await appCore.start()
             logger.info("AppCore started, onboardingComplete=\(store.settings.onboardingComplete)")
 
-            // If onboarding is not complete, show the main window
-            if !store.settings.onboardingComplete {
+            // User-initiated launches (Dock, Finder, Spotlight, Xcode Run)
+            // open the main window at the current route. Login-item launches
+            // (SMAppService.mainApp at login) start silently — menu bar only.
+            if LaunchClassifier.shouldShowWindow(for: launchKind) {
                 showMainWindow()
             }
         }
@@ -103,6 +101,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_: Notification) {
         core?.prepareForTermination()
+    }
+
+    // MARK: - Launch helpers
+
+    /// Opens the store, or shows an error alert and terminates.
+    /// Returns `nil` when the app is about to terminate (architecture section 7).
+    private func openStoreOrTerminate() -> Store? {
+        let storeURL = appSupportURL()
+        do {
+            return try Store(configuration: .onDisk(storeURL))
+        } catch {
+            logger.error("Failed to open store: \(error.localizedDescription, privacy: .public)")
+            let alert = NSAlert()
+            alert.messageText = "WindowCleaner couldn\u{2019}t open its data."
+            alert.informativeText = error.localizedDescription
+            alert.addButton(withTitle: "Quit")
+            alert.addButton(withTitle: "Reset Data")
+            let response = alert.runModal()
+            if response == .alertSecondButtonReturn {
+                resetStoreAndRelaunch(at: storeURL)
+            }
+            NSApp.terminate(nil)
+            return nil
+        }
+    }
+
+    /// Observes window close to switch the activation policy back to accessory.
+    private func observeWindowClose() {
+        windowObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.checkActivationPolicy()
+            }
+        }
     }
 
     // MARK: - Window management

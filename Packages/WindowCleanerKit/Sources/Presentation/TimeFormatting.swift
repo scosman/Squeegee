@@ -100,7 +100,7 @@ public enum TimeFormatting {
 
     /// Produces the display text for a window's schedule status.
     ///
-    /// Used in Up Next (menu) and Open Windows (rule page).
+    /// Used in Closing Next (menu) and Open Windows (rule page).
     public static func formatScheduleStatus(
         _ status: ScheduleStatus,
         deadline: Date?,

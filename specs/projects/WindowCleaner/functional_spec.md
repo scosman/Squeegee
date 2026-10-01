@@ -182,6 +182,10 @@ WindowCleaner scans for installed apps (`/Applications`, `/System/Applications`,
 
 The same Suggestions view is available later from Settings → Apps ("Add suggested rules"). There it shows only catalog apps that do not already have an app rule.
 
+### 7.2 Launch behavior
+
+A user-initiated launch (Dock, Finder, Spotlight, Launchpad, `open`, Xcode Run) opens the main window at the current route: Onboarding if not complete, Settings otherwise. A launch at login (the system starts the app via `SMAppService.mainApp`) is silent: menu bar only, no window. The login-item launch is detected via the `keyAELaunchedAsLogInItem` descriptor in the `kAEOpenApplication` Apple event.
+
 ## 8. Menu Bar
 
 A menu bar icon opens a popover.
@@ -195,7 +199,7 @@ A menu bar icon opens a popover.
 ### 8.2 Popover contents
 
 1. **Banner** (only if needed): permission missing (§6), or "Paused until …" with a Resume button.
-2. **Up next:** the managed windows with the soonest deadlines, sorted by deadline, up to 8 rows. Each row: app icon, window title (or app name if there is no title), time left ("in 2 h 10 m"; "waiting — in use" for a focused window past its deadline). Clicking a row opens Settings → Apps at that app's rule, so the user can adjust it. There are no per-window actions.
+2. **Closing next:** the managed windows with the soonest deadlines, sorted by deadline, up to 8 rows. Each row: app icon, window title (or app name if there is no title), time left ("in 2 h 10 m"; "waiting — in use" for a focused window past its deadline). Clicking a row opens Settings → Apps at that app's rule, so the user can adjust it. There are no per-window actions.
 3. **Recently closed:** the last 8 closures, newest first. Each row: app icon, window title, and time ago ("20 m ago"). A **Reopen** button shows when a document or folder URL was captured (§9). App quits show as "Quit QuickTime Player".
 4. **Footer:** Pause menu (1 hour / Until tomorrow / Until resumed, or Resume when paused), Settings…, Quit WindowCleaner.
 
