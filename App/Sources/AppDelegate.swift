@@ -181,6 +181,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let rootView = MainWindowRootView(core: appCore)
         let hostingView = NSHostingView(rootView: rootView)
+        // Block SwiftUI from bridging its toolbar into the window.
+        // NavigationSplitView adds a sidebar toggle button through
+        // toolbar bridging; this removes the button deterministically.
+        // An AppKit-owned empty NSToolbar (below) keeps the unified
+        // toolbar-area visual.
+        hostingView.sceneBridgingOptions = []
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 760, height: 540),
@@ -196,9 +202,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // the lifetime ourselves via the mainWindow property.
         window.isReleasedWhenClosed = false
 
+        // Install an empty AppKit-owned NSToolbar so the window keeps
+        // its unified toolbar visual (title in the toolbar row) without
+        // any sidebar toggle button.
+        let toolbar = NSToolbar(identifier: "MainWindowToolbar")
+        toolbar.displayMode = .iconOnly
+        window.toolbar = toolbar
+        window.toolbarStyle = .unified
+
         mainWindow = window
         window.makeKeyAndOrderFront(nil)
         logger.info("Created main window via NSWindow + NSHostingView")
+    }
+
+    // MARK: - Sidebar collapse prevention
+
+    /// Intercepts the View > Toggle Sidebar (Ctrl-Cmd-S) action.
+    /// The sidebar must always be visible; this blocks the action at
+    /// the end of the responder chain as a safety net alongside
+    /// `columnVisibility: .constant(.all)` in SettingsRootView.
+    @objc func toggleSidebar(_: Any?) {
+        logger.info("toggleSidebar: action blocked")
     }
 
     private func checkActivationPolicy() {

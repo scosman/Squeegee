@@ -75,6 +75,10 @@ private struct WindowChromeHelper: NSViewRepresentable {
             window.titlebarAppearsTransparent = true
             window.styleMask.insert(.fullSizeContentView)
             window.styleMask.remove(.resizable)
+            // The window owns an AppKit toolbar (for the unified visual
+            // in settings); hide it during onboarding so the transparent
+            // title bar looks the same as a window with no toolbar.
+            window.toolbar?.isVisible = false
 
             // Fixed size
             let onboardingSize = NSSize(width: 640, height: 600)
@@ -87,6 +91,10 @@ private struct WindowChromeHelper: NSViewRepresentable {
             window.titlebarAppearsTransparent = false
             window.styleMask.remove(.fullSizeContentView)
             window.styleMask.insert(.resizable)
+            // Restore the AppKit toolbar so the title appears in the
+            // unified toolbar row. The toolbar is empty (no sidebar
+            // toggle); SwiftUI toolbar bridging is disabled in AppDelegate.
+            window.toolbar?.isVisible = true
 
             // Settings defaults
             let settingsMin = NSSize(width: 640, height: 440)

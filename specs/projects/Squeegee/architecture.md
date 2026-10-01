@@ -255,7 +255,7 @@ There is no periodic focus sampling. Focus time is measured with event timestamp
 4. `applicationShouldHandleReopen(_:hasVisibleWindows:)` → `showMainWindow()`, return `false` (functional spec §8.3).
 5. `applicationShouldTerminateAfterLastWindowClosed` → `false`.
 
-**Sidebar.** The `NavigationSplitView` uses `columnVisibility: .constant(.all)` and `.navigationSplitViewStyle(.balanced)`. Sidebar collapse prevention is a known open item (`.toolbar(removing: .sidebarToggle)` does not work inside `NSHostingView`).
+**Sidebar.** The `NavigationSplitView` uses `columnVisibility: .constant(.all)` and `.navigationSplitViewStyle(.balanced)`. SwiftUI toolbar bridging is disabled (`hostingView.sceneBridgingOptions = []`) so `NavigationSplitView` cannot add a sidebar toggle button. An AppKit-owned empty `NSToolbar` with `.unified` style provides the unified toolbar visual (title in the toolbar row). The toolbar is hidden during onboarding and shown during settings via `WindowChromeModifier`. `AppDelegate.toggleSidebar(_:)` blocks the View > Toggle Sidebar action as a safety net.
 
 **Info.plist:** `LSUIElement = YES` (starts as a menu bar app with no Dock icon; policy switches to `.regular` only while the window is open). Bundle ID `net.scosman.squeegee`. There are no usage-description keys (Accessibility has none).
 
