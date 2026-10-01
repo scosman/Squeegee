@@ -14,10 +14,10 @@ A native macOS menu bar app that closes stale windows. Set per-app rules ("close
 
 ## Features
 
-- **Per-window close timers.** Set a duration per app. WindowCleaner closes each window when its timer expires.
+- **Per-window close timers.** Set a duration per app. Squeegee closes each window when its timer expires.
 - **Measure from last active or opened.** "Last active" (default) tracks the last time you used a window. "Opened" counts from when the window first appeared.
 - **Per-app rules + a global default.** Add rules for specific apps, or set a global rule that applies to everything else.
-- **Optional quit-when-empty.** An app can quit after WindowCleaner has closed all its windows.
+- **Optional quit-when-empty.** An app can quit after Squeegee has closed all its windows.
 - **Reopen.** Recent closures show in the menu bar with a one-click reopen for documents that had a URL.
 - **Suggestions.** A built-in catalog proposes rules for common apps (Finder, Preview, QuickTime, messaging apps, and more).
 - **Onboarding.** A 4-step first-launch flow: welcome, Accessibility permission, suggested rules, and completion.
@@ -75,7 +75,7 @@ The app requires Apple Development signing for local runs because Accessibility 
 4. Notarizes the app bundle, then staples the ticket.
 5. Creates a DMG with the app and an Applications symlink.
 6. Signs, notarizes, and staples the DMG.
-7. Outputs `build/release/WindowCleaner-<version>.dmg`.
+7. Outputs `build/release/Squeegee-<version>.dmg`.
 
 ### Required setup
 
@@ -92,7 +92,7 @@ The app requires Apple Development signing for local runs because Accessibility 
 
 ## Architecture
 
-All logic lives in the `Packages/WindowCleanerKit` Swift package. The app target (`App/`) is the composition root.
+All logic lives in the `Packages/SqueegeeKit` Swift package. The app target (`App/`) is the composition root.
 
 ### Module DAG
 
@@ -116,7 +116,7 @@ L3b AppShellUI        Main window root (onboarding vs. settings)
 - Swift 6, strict concurrency, warnings-as-errors.
 - No third-party dependencies.
 - Tests use Swift Testing (`import Testing`), not XCTest.
-- `os.Logger` with subsystem `net.scosman.windowcleaner`.
+- `os.Logger` with subsystem `net.scosman.squeegee`.
 
 ## Development
 

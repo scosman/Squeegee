@@ -1,6 +1,6 @@
 name: ManualTestApp
 options:
-  bundleIdPrefix: net.scosman.windowcleaner
+  bundleIdPrefix: net.scosman.squeegee
   deploymentTarget:
     macOS: "15.0"
   createIntermediateGroups: true
@@ -24,8 +24,8 @@ settings:
       DEVELOPMENT_TEAM: ""
 
 packages:
-  WindowCleanerKit:
-    path: ../Packages/WindowCleanerKit
+  SqueegeeKit:
+    path: ../Packages/SqueegeeKit
 
 targets:
   ManualTestApp:
@@ -37,18 +37,18 @@ targets:
       - Resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: net.scosman.windowcleaner.manualtest
+        PRODUCT_BUNDLE_IDENTIFIER: net.scosman.squeegee.manualtest
         INFOPLIST_FILE: Resources/Info.plist
         GENERATE_INFOPLIST_FILE: "NO"
         CODE_SIGN_ENTITLEMENTS: ManualTestApp.entitlements
         MARKETING_VERSION: "0.0.1"
         CURRENT_PROJECT_VERSION: "1"
     dependencies:
-      - package: WindowCleanerKit
+      - package: SqueegeeKit
         product: ManualTestKit
-      - package: WindowCleanerKit
+      - package: SqueegeeKit
         product: SystemBridge
-      - package: WindowCleanerKit
+      - package: SqueegeeKit
         product: Engine
 
 schemes:

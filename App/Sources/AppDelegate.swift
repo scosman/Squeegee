@@ -7,7 +7,7 @@ import Persistence
 import SwiftUI
 import SystemBridge
 
-private let logger = Logger(subsystem: "net.scosman.windowcleaner", category: "AppDelegate")
+private let logger = Logger(subsystem: "net.scosman.squeegee", category: "AppDelegate")
 
 /// Reads the `keyAELaunchedAsLogInItem` ('lgit') descriptor from the
 /// current `kAEOpenApplication` Apple event.
@@ -114,7 +114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {
             logger.error("Failed to open store: \(error.localizedDescription, privacy: .public)")
             let alert = NSAlert()
-            alert.messageText = "WindowCleaner couldn\u{2019}t open its data."
+            alert.messageText = "Squeegee couldn\u{2019}t open its data."
             alert.informativeText = error.localizedDescription
             alert.addButton(withTitle: "Quit")
             alert.addButton(withTitle: "Reset Data")
@@ -188,7 +188,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "WindowCleaner"
+        window.title = "Squeegee"
         window.contentView = hostingView
         window.center()
         window.contentMinSize = NSSize(width: 640, height: 440)
@@ -234,7 +234,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Deletes the store files and relaunches the app (architecture section 7).
     private func resetStoreAndRelaunch(at directory: URL) {
-        let storeFile = directory.appendingPathComponent("WindowCleaner.store")
+        let storeFile = directory.appendingPathComponent("Squeegee.store")
         let fileManager = FileManager.default
         // SwiftData may create .store, .store-shm, .store-wal
         for suffix in ["", "-shm", "-wal"] {
@@ -257,7 +257,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             fatalError("Application Support directory not found")
         }
-        let dir = appSupport.appendingPathComponent("WindowCleaner")
+        let dir = appSupport.appendingPathComponent("Squeegee")
         try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

@@ -1,5 +1,5 @@
-server_name: "WindowCleaner"
-server_description: "WindowCleaner dev commands — thin wrappers over the Makefile."
+server_name: "Squeegee"
+server_description: "Squeegee dev commands — thin wrappers over the Makefile."
 
 actions:
   - name: "bootstrap"

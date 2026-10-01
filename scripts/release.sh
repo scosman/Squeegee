@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# release.sh — Build, sign, notarize, and package WindowCleaner as a DMG.
+# release.sh — Build, sign, notarize, and package Squeegee as a DMG.
 #
 # Usage:
 #   make release
@@ -25,16 +25,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 APP_DIR="$REPO_ROOT/App"
 PROJECT_YML="$APP_DIR/project.yml"
-PROJECT_FILE="$APP_DIR/WindowCleaner.xcodeproj"
-SCHEME="WindowCleaner"
-BUNDLE_ID="net.scosman.windowcleaner"
+PROJECT_FILE="$APP_DIR/Squeegee.xcodeproj"
+SCHEME="Squeegee"
+BUNDLE_ID="net.scosman.squeegee"
 TEAM_ID="B5L5M4B62J"
 SIGN_IDENTITY="Developer ID Application"
 
 NOTARYTOOL_PROFILE="${NOTARYTOOL_PROFILE:-notarytool-password-scosman}"
 
 BUILD_DIR="$REPO_ROOT/build/release"
-ARCHIVE_PATH="$BUILD_DIR/WindowCleaner.xcarchive"
+ARCHIVE_PATH="$BUILD_DIR/Squeegee.xcarchive"
 EXPORT_DIR="$BUILD_DIR/export"
 EXPORT_PLIST="$BUILD_DIR/export-options.plist"
 
@@ -138,7 +138,7 @@ xcodebuild -exportArchive \
     -exportOptionsPlist "$EXPORT_PLIST" \
     -exportPath "$EXPORT_DIR"
 
-APP_PATH="$EXPORT_DIR/WindowCleaner.app"
+APP_PATH="$EXPORT_DIR/Squeegee.app"
 if [[ ! -d "$APP_PATH" ]]; then
     error "Export failed — no app at $APP_PATH"
 fi
@@ -148,7 +148,7 @@ fi
 log "Notarizing app"
 
 # Create a zip for notarization
-APP_ZIP="$BUILD_DIR/WindowCleaner-app.zip"
+APP_ZIP="$BUILD_DIR/Squeegee-app.zip"
 ditto -c -k --keepParent "$APP_PATH" "$APP_ZIP"
 
 xcrun notarytool submit "$APP_ZIP" \
@@ -160,7 +160,7 @@ xcrun stapler staple "$APP_PATH"
 
 # ── Create DMG ─────────────────────────────────────────────────────────────────
 
-DMG_NAME="WindowCleaner-${VERSION}.dmg"
+DMG_NAME="Squeegee-${VERSION}.dmg"
 DMG_PATH="$BUILD_DIR/$DMG_NAME"
 DMG_STAGING="$BUILD_DIR/dmg-staging"
 
@@ -171,7 +171,7 @@ cp -R "$APP_PATH" "$DMG_STAGING/"
 ln -s /Applications "$DMG_STAGING/Applications"
 
 hdiutil create \
-    -volname "WindowCleaner" \
+    -volname "Squeegee" \
     -srcfolder "$DMG_STAGING" \
     -ov \
     -format UDZO \

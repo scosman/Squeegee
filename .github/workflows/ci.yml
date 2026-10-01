@@ -30,8 +30,8 @@ jobs:
       - name: Cache SPM
         uses: actions/cache@v4
         with:
-          path: Packages/WindowCleanerKit/.build
-          key: spm-${{ hashFiles('Packages/WindowCleanerKit/Package.swift') }}
+          path: Packages/SqueegeeKit/.build
+          key: spm-${{ hashFiles('Packages/SqueegeeKit/Package.swift') }}
           restore-keys: spm-
       - name: Cache pinned tools (SwiftLint + SwiftFormat)
         uses: actions/cache@v4

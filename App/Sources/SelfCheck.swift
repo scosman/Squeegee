@@ -4,11 +4,11 @@ import OSLog
 #if DEBUG
 
     /// DEBUG-only self-check diagnostics. Logs verifiable facts at `.info`
-    /// with prefix `[selfcheck]` (subsystem `net.scosman.windowcleaner`).
+    /// with prefix `[selfcheck]` (subsystem `net.scosman.squeegee`).
     /// Compiled out of Release builds.
     @MainActor
     enum SelfCheck {
-        private static let logger = Logger(subsystem: "net.scosman.windowcleaner", category: "SelfCheck")
+        private static let logger = Logger(subsystem: "net.scosman.squeegee", category: "SelfCheck")
 
         // MARK: - Window open diagnostics
 
@@ -93,7 +93,7 @@ import OSLog
 
             // Trigger: "Settings..." action
             center.addObserver(
-                forName: .init("net.scosman.windowcleaner.debug.openSettings"),
+                forName: .init("net.scosman.squeegee.debug.openSettings"),
                 object: nil,
                 queue: .main
             ) { _ in
@@ -105,7 +105,7 @@ import OSLog
 
             // Trigger: Remove action (logs only; does not actually remove)
             center.addObserver(
-                forName: .init("net.scosman.windowcleaner.debug.logRemoveConfirm"),
+                forName: .init("net.scosman.squeegee.debug.logRemoveConfirm"),
                 object: nil,
                 queue: .main
             ) { _ in

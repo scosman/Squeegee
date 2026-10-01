@@ -77,7 +77,7 @@ final class MonitorLoop {
     private let scheduler = LiveAppScheduler()
 
     private static let logger = Logger(
-        subsystem: "net.scosman.windowcleaner",
+        subsystem: "net.scosman.squeegee",
         category: "MonitorLoop"
     )
 

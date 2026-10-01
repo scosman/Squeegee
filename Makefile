@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 
-PACKAGE := Packages/WindowCleanerKit
+PACKAGE := Packages/SqueegeeKit
 LINT_PATHS := $(wildcard Packages App ManualTestApp)
 
 # SwiftLint is pinned to an exact version. Homebrew cannot pin a formula version
@@ -92,7 +92,7 @@ precommit-checks: ## The pre-commit checks (format + lint + test); the hook and 
 	$(MAKE) test
 
 build-app: generate ## NON-GATING: build both apps via xcodebuild (ad-hoc)
-	cd App && xcodebuild -quiet -project WindowCleaner.xcodeproj -scheme WindowCleaner \
+	cd App && xcodebuild -quiet -project Squeegee.xcodeproj -scheme Squeegee \
 	  -destination 'platform=macOS,arch=arm64' \
 	  -configuration Debug CODE_SIGNING_ALLOWED=YES \
 	  CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" build
@@ -102,10 +102,10 @@ build-app: generate ## NON-GATING: build both apps via xcodebuild (ad-hoc)
 	  CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" build
 
 run-app: generate ## Build + run the app with Apple Development signing
-	cd App && xcodebuild -quiet -project WindowCleaner.xcodeproj -scheme WindowCleaner \
+	cd App && xcodebuild -quiet -project Squeegee.xcodeproj -scheme Squeegee \
 	  -destination 'platform=macOS,arch=arm64' \
 	  -configuration Debug build
-	open App/build/Debug/WindowCleaner.app
+	open App/build/Debug/Squeegee.app
 
 run-manual-tests: generate ## Build + run ManualTestApp with Apple Development signing
 	cd ManualTestApp && xcodebuild -quiet -project ManualTestApp.xcodeproj -scheme ManualTestApp \
@@ -127,6 +127,6 @@ release: generate ## Archive, notarize, staple, and package a release DMG
 
 clean: ## Remove build artifacts + generated projects
 	rm -rf .build $(PACKAGE)/.build build
-	rm -rf App/WindowCleaner.xcodeproj ManualTestApp/ManualTestApp.xcodeproj
-	rm -rf ~/Library/Developer/Xcode/DerivedData/WindowCleaner-*
+	rm -rf App/Squeegee.xcodeproj ManualTestApp/ManualTestApp.xcodeproj
+	rm -rf ~/Library/Developer/Xcode/DerivedData/Squeegee-*
 	rm -rf ~/Library/Developer/Xcode/DerivedData/ManualTestApp-*

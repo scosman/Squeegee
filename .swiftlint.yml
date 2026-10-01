@@ -6,7 +6,7 @@ included:
 excluded:
   - .build
   - "**/.build"
-  - App/WindowCleaner.xcodeproj
+  - App/Squeegee.xcodeproj
   - ManualTestApp/ManualTestApp.xcodeproj
   - "**/DerivedData"
 

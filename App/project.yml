@@ -1,4 +1,4 @@
-name: WindowCleaner
+name: Squeegee
 options:
   bundleIdPrefix: net.scosman
   deploymentTarget:
@@ -14,7 +14,7 @@ settings:
     GCC_TREAT_WARNINGS_AS_ERRORS: YES
     OTHER_SWIFT_FLAGS: "$(inherited) -warnings-as-errors"
     CODE_SIGN_STYLE: Manual
-    INFOPLIST_KEY_CFBundleDisplayName: "WindowCleaner"
+    INFOPLIST_KEY_CFBundleDisplayName: "Squeegee"
     ENABLE_HARDENED_RUNTIME: YES
   configs:
     Debug:
@@ -25,11 +25,11 @@ settings:
       DEVELOPMENT_TEAM: B5L5M4B62J
 
 packages:
-  WindowCleanerKit:
-    path: ../Packages/WindowCleanerKit
+  SqueegeeKit:
+    path: ../Packages/SqueegeeKit
 
 targets:
-  WindowCleaner:
+  Squeegee:
     type: application
     platform: macOS
     deploymentTarget: "15.0"
@@ -38,29 +38,29 @@ targets:
       - Resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: net.scosman.windowcleaner
+        PRODUCT_BUNDLE_IDENTIFIER: net.scosman.squeegee
         INFOPLIST_FILE: Resources/Info.plist
         GENERATE_INFOPLIST_FILE: "NO"
-        CODE_SIGN_ENTITLEMENTS: WindowCleaner.entitlements
+        CODE_SIGN_ENTITLEMENTS: Squeegee.entitlements
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
     dependencies:
-      - package: WindowCleanerKit
+      - package: SqueegeeKit
         product: AppShellUI
-      - package: WindowCleanerKit
+      - package: SqueegeeKit
         product: AppCore
-      - package: WindowCleanerKit
+      - package: SqueegeeKit
         product: MenuBarUI
-      - package: WindowCleanerKit
+      - package: SqueegeeKit
         product: SystemBridge
-      - package: WindowCleanerKit
+      - package: SqueegeeKit
         product: Persistence
 
 schemes:
-  WindowCleaner:
+  Squeegee:
     build:
       targets:
-        WindowCleaner: all
+        Squeegee: all
     run:
       config: Debug
     test:
