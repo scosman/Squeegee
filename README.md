@@ -10,147 +10,56 @@
 </a>
 </div>
 
-A native macOS menu bar app that closes stale windows. Set per-app rules ("close Finder windows 6 hours after I last used them", "Quit Quicktime when last window closes", etc), and Squeegee closes each window when its time is up. It works per **window**, not per process: closing one stale Finder window leaves the other Finder windows open.
+---
+
+**Squeegee** is a native macOS menu bar app that closes stale windows. Set per-app rules ("close Finder windows 6 hours after I last used them"), and Squeegee closes each window when its time is up. It works per **window**, not per process: closing one stale Finder window leaves your other Finder windows open.
+
+<div align="center">
+:lock: <strong>Private</strong> runs locally on your Mac  &middot;  :zap: <strong>Lightweight</strong> native macOS app, no Electron
+</div>
+
+<!-- TODO: Add a screenshot or short video of the app in action -->
 
 ## Features
 
-- **Per-window close timers.** Set a duration per app. Squeegee closes each window when its timer expires.
-- **Measure from last active or opened.** "Last active" (default) tracks the last time you used a window. "Opened" counts from when the window first appeared.
-- **Per-app rules + a global default.** Add rules for specific apps, or set a global rule that applies to everything else.
-- **Optional quit-when-empty.** An app can quit after Squeegee has closed all its windows.
-- **Reopen.** Recent closures show in the menu bar with a one-click reopen for documents that had a URL.
-- **Suggestions.** A built-in catalog proposes rules for common apps (Finder, Preview, QuickTime, messaging apps, and more).
-- **Onboarding.** A 4-step first-launch flow: welcome, Accessibility permission, suggested rules, and completion.
-- **Pause.** Pause all closures from the menu bar -- for a duration or until you resume.
-- **Menu bar icon.** Shows upcoming and recent closures. The icon can be hidden in Settings.
-- **Launch at login.** Toggle in Settings (uses SMAppService).
-- **Safe by default.** Nothing closes until you turn it on. Only normal close actions (the same as clicking the red button). Never force-quits.
-- **Local and private.** No network, no accounts, no telemetry.
+- **Per-window close timers** -- Set a duration per app. Squeegee closes each window individually when its timer expires.
+- **Last active or opened** -- "Last active" (default) tracks the last time you used a window. "Opened" counts from when the window first appeared.
+- **Per-app rules + a global default** -- Add rules for specific apps, or set one global rule that applies to everything else.
+- **Quit when empty** -- Optionally quit an app after Squeegee closes all its windows.
+- **Reopen** -- Recent closures appear in the menu bar with one-click reopen for documents.
+- **Suggestions** -- A built-in catalog proposes rules for common apps (Finder, Preview, QuickTime, messaging apps, and more).
+- **Pause** -- Pause all closures from the menu bar: for an hour, until tomorrow, or until you resume.
+- **Menu bar icon** -- See upcoming and recent closures at a glance. The icon can be hidden in Settings.
+- **Launch at login** -- Toggle in Settings so Squeegee starts when your Mac starts.
+- **Safe by default** -- Nothing closes until you turn it on. Squeegee sends a normal close (the same as clicking the red button) and never force-quits anything.
+- **Local and private** -- No network access, no accounts, no telemetry. Window titles and data never leave your Mac.
+
+## How It Works
+
+1. **Add a rule** -- Pick an app and choose how long a window can sit idle before Squeegee closes it.
+2. **Squeegee watches** -- It tracks each window's last-active time (or opened time) in the background.
+3. **Stale windows close** -- When a window passes its deadline, Squeegee closes it, just like clicking the red close button.
+
+Rules apply per app, not per window. You set them once and Squeegee handles the rest.
+
+## Accessibility Permission
+
+Squeegee needs the **Accessibility** permission to see and close windows of other apps. The app prompts for it on first launch. Nothing leaves your Mac -- the permission is used only to close windows locally.
 
 ## Requirements
 
-- macOS 15.0 or later
-- Accessibility permission (the app prompts for it on first launch)
+- macOS 15.0 (Sequoia) or later
 
-## Building
+## Install
 
-### Prerequisites
+1. Download [`Squeegee.dmg`](https://github.com/scosman/Squeegee/releases/latest/download/Squeegee.dmg).
+2. Open the DMG and drag **Squeegee.app** to your Applications folder.
+3. Open Squeegee and follow the onboarding to grant Accessibility access and pick your first rules.
 
-- Xcode 16+ with command-line tools
-- [Homebrew](https://brew.sh)
+## Contributing
 
-### Setup
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for build instructions, architecture, and development workflow.
 
-```bash
-make bootstrap    # Install XcodeGen, Node (for XcodeBuildMCP), pinned SwiftLint + SwiftFormat
-make generate     # Generate Xcode projects from project.yml
-```
+## License
 
-### Build and Test
-
-```bash
-make build        # Build the Swift package (all modules)
-make test         # Run the test suite
-make lint         # Check formatting and lint rules
-make ci           # lint + test + build (what CI runs)
-```
-
-### Run
-
-```bash
-make run-app      # Build and launch the app (Apple Development signing)
-```
-
-The app requires Apple Development signing for local runs because Accessibility grants are bound to the code signature. Ad-hoc builds lose the grant on every rebuild.
-
-## Release
-
-`make release` builds a signed, notarized DMG for distribution.
-
-### What the script does
-
-1. Generates the Xcode project from `project.yml`.
-2. Archives the app with Release configuration and Developer ID signing.
-3. Exports the archive with `method: developer-id`.
-4. Notarizes the app bundle, then staples the ticket.
-5. Creates a DMG with the app and an Applications symlink.
-6. Signs, notarizes, and staples the DMG.
-7. Outputs `build/release/Squeegee-<version>.dmg`.
-
-### Required setup
-
-| Item | How to set up |
-|---|---|
-| Developer ID certificate | Install from Apple Developer portal into your keychain |
-| Notarytool keychain profile | `xcrun notarytool store-credentials "notarytool-password-scosman" --apple-id <email> --team-id B5L5M4B62J --password <app-specific-password>` |
-
-### Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `NOTARYTOOL_PROFILE` | `notarytool-password-scosman` | Keychain profile name for `notarytool` |
-
-## Architecture
-
-All logic lives in the `Packages/SqueegeeKit` Swift package. The app target (`App/`) is the composition root.
-
-### Module DAG
-
-```
-L0  Engine            Pure domain: value types, port protocols, TrackerReducer, Planner
-L0  Presentation      Formatters, rule summaries, MenuContentBuilder
-L1  Persistence       SwiftData schema and Store
-L1  SystemBridge      Live ports (CG, AX, NSWorkspace, SMAppService)
-L2  AppCore           Orchestrator: event pump, executor, timer, pause, permissions
-L3  SharedUI          AppIconView, SuggestionListView
-L3  MenuBarUI         NSStatusItem + NSMenu rendering
-L3  OnboardingUI      4-step first-launch flow
-L3  SettingsUI        Sidebar settings with per-app rule editor
-L3b AppShellUI        Main window root (onboarding vs. settings)
-```
-
-`AppCore` depends on port protocols in `Engine`, not on `SystemBridge`. The app target wires the live implementations.
-
-### Key conventions
-
-- Swift 6, strict concurrency, warnings-as-errors.
-- No third-party dependencies.
-- Tests use Swift Testing (`import Testing`), not XCTest.
-- `os.Logger` with subsystem `net.scosman.squeegee`.
-
-## Development
-
-### Makefile targets
-
-| Target | Description |
-|---|---|
-| `make bootstrap` | Install dev tools |
-| `make generate` | Generate Xcode projects |
-| `make build` | Build the SPM package |
-| `make test` | Run package tests |
-| `make lint` | Check formatting + lint |
-| `make format` | Auto-format |
-| `make precommit-checks` | format + lint + test |
-| `make build-app` | Build both apps via xcodebuild (ad-hoc) |
-| `make run-app` | Build and run the app |
-| `make run-manual-tests` | Build and run ManualTestApp |
-| `make release` | Archive, notarize, and package a release DMG |
-| `make ci` | lint + test + build |
-| `make hooks` | Enable pre-commit hook |
-| `make clean` | Remove build artifacts |
-
-### Pre-commit hook
-
-```bash
-make hooks        # Enable the opt-in hook
-```
-
-The hook runs `make precommit-checks` (format + lint + test) before each commit.
-
-### CI
-
-CI runs on GitHub Actions (`macos-15` runner):
-
-- **package-tier** (gating): `make ci`
-- **app-tier** (non-gating): `make build-app`
-- **manual-tests-check** (non-gating): `make manual-tests-check`
+[MIT License](LICENSE)

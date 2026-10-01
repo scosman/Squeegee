@@ -78,10 +78,13 @@ L4  App target        (depends AppShellUI, MenuBarUI, AppCore, SystemBridge, Per
 │   └── Tests/<Module>Tests/, Tests/TestSupport/
 ├── scripts/                      # release.sh (Phase 9)
 ├── specs/                        # project specs
-├── .github/workflows/ci.yml
+├── .github/
+│   ├── workflows/ci.yml
+│   └── CONTRIBUTING.md           # build, architecture, dev workflow
 ├── .githooks/pre-commit
 ├── Makefile, Brewfile, .swiftlint.yml, .swiftformat
 ├── .mcp.json, hooks_mcp.yaml
+├── LICENSE                       # MIT
 └── CLAUDE.md                     # this file
 ```
 

@@ -1,0 +1,122 @@
+# Contributing to Squeegee
+
+## Prerequisites
+
+- Xcode 16+ with command-line tools
+- [Homebrew](https://brew.sh)
+
+## Setup
+
+```bash
+make bootstrap    # Install XcodeGen, Node (for XcodeBuildMCP), pinned SwiftLint + SwiftFormat
+make generate     # Generate Xcode projects from project.yml
+```
+
+## Build and Test
+
+```bash
+make build        # Build the Swift package (all modules)
+make test         # Run the test suite
+make lint         # Check formatting and lint rules
+make ci           # lint + test + build (what CI runs)
+```
+
+## Run
+
+```bash
+make run-app      # Build and launch the app (Apple Development signing)
+```
+
+The app requires Apple Development signing for local runs because Accessibility grants are bound to the code signature. Ad-hoc builds lose the grant on every rebuild.
+
+## Release
+
+`make release` builds a signed, notarized DMG for distribution.
+
+### What the script does
+
+1. Generates the Xcode project from `project.yml`.
+2. Archives the app with Release configuration and Developer ID signing.
+3. Exports the archive with `method: developer-id`.
+4. Notarizes the app bundle, then staples the ticket.
+5. Creates a DMG with the app and an Applications symlink.
+6. Signs, notarizes, and staples the DMG.
+7. Outputs `build/release/Squeegee-<version>.dmg`.
+
+### Required setup
+
+| Item | How to set up |
+|---|---|
+| Developer ID certificate | Install from Apple Developer portal into your keychain |
+| Notarytool keychain profile | `xcrun notarytool store-credentials "notarytool-password-scosman" --apple-id <email> --team-id B5L5M4B62J --password <app-specific-password>` |
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `NOTARYTOOL_PROFILE` | `notarytool-password-scosman` | Keychain profile name for `notarytool` |
+
+## Architecture
+
+All logic lives in the `Packages/SqueegeeKit` Swift package. The app target (`App/`) is the composition root.
+
+### Module DAG
+
+```
+L0  Engine            Pure domain: value types, port protocols, TrackerReducer, Planner
+L0  Presentation      Formatters, rule summaries, MenuContentBuilder
+L1  Persistence       SwiftData schema and Store
+L1  SystemBridge      Live ports (CG, AX, NSWorkspace, SMAppService)
+L2  AppCore           Orchestrator: event pump, executor, timer, pause, permissions
+L3  SharedUI          AppIconView, SuggestionListView
+L3  MenuBarUI         NSStatusItem + NSMenu rendering
+L3  OnboardingUI      4-step first-launch flow
+L3  SettingsUI        Sidebar settings with per-app rule editor
+L3b AppShellUI        Main window root (onboarding vs. settings)
+```
+
+`AppCore` depends on port protocols in `Engine`, not on `SystemBridge`. The app target wires the live implementations.
+
+### Key conventions
+
+- Swift 6, strict concurrency, warnings-as-errors.
+- No third-party dependencies.
+- Tests use Swift Testing (`import Testing`), not XCTest.
+- `os.Logger` with subsystem `net.scosman.squeegee`.
+
+## Development
+
+### Makefile targets
+
+| Target | Description |
+|---|---|
+| `make bootstrap` | Install dev tools |
+| `make generate` | Generate Xcode projects |
+| `make build` | Build the SPM package |
+| `make test` | Run package tests |
+| `make lint` | Check formatting + lint |
+| `make format` | Auto-format |
+| `make precommit-checks` | format + lint + test |
+| `make build-app` | Build both apps via xcodebuild (ad-hoc) |
+| `make run-app` | Build and run the app |
+| `make run-manual-tests` | Build and run ManualTestApp |
+| `make release` | Archive, notarize, and package a release DMG |
+| `make ci` | lint + test + build |
+| `make hooks` | Enable pre-commit hook |
+| `make clean` | Remove build artifacts |
+
+### Pre-commit hook
+
+```bash
+make hooks        # Enable the opt-in hook
+```
+
+The hook runs `make precommit-checks` (format + lint + test) before each commit.
+
+### CI
+
+CI runs on GitHub Actions (`macos-15` runner):
+
+- **package-tier** (gating): `make ci`
+- **app-tier** (non-gating): `make build-app`
+- **manual-tests-check** (non-gating): `make manual-tests-check`
