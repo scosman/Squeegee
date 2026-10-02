@@ -42,6 +42,16 @@ actions:
     command: "bash -c 'set -o pipefail; make build-app 2>&1 | tail -n 400'"
     timeout: 300
 
+  - name: "profile_app"
+    description: "Build a symbolicated Release app (Developer ID) for profiling"
+    command: "bash -c 'set -o pipefail; make profile-app 2>&1 | tail -n 400'"
+    timeout: 600
+
+  - name: "bench"
+    description: "Run the deterministic perf-bench benchmark (release build)"
+    command: "bash -c 'set -o pipefail; make bench 2>&1 | tail -n 400'"
+    timeout: 600
+
   - name: "manual_tests_check"
     description: "Check that all manual test step IDs have been run"
     command: "bash -c 'set -o pipefail; make manual-tests-check 2>&1 | tail -n 400'"

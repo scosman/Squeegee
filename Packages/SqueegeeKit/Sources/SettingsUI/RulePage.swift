@@ -108,6 +108,13 @@ private struct AppRulePageContent: View {
             removeSection
         }
         .formStyle(.grouped)
+        // Notify the Store when any app-rule property changes so that the
+        // ruleVersion counter bumps and AppCore's withObservationTracking
+        // reliably fires its onChange (see Store.notifyRuleChanged() doc).
+        .onChange(of: record.isEnabled) { _, _ in core.store.notifyRuleChanged() }
+        .onChange(of: record.closeAfterSeconds) { _, _ in core.store.notifyRuleChanged() }
+        .onChange(of: record.measureFromRaw) { _, _ in core.store.notifyRuleChanged() }
+        .onChange(of: record.quitPolicyRaw) { _, _ in core.store.notifyRuleChanged() }
         .sheet(isPresented: $showRemoveConfirmation) {
             RemoveRuleSheet(
                 appName: record.appName,

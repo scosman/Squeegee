@@ -84,7 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // User-initiated launches (Dock, Finder, Spotlight, Xcode Run)
             // open the main window at the current route. Login-item launches
             // (SMAppService.mainApp at login) start silently — menu bar only.
-            if LaunchClassifier.shouldShowWindow(for: launchKind) {
+            if !isProfilingMode, LaunchClassifier.shouldShowWindow(for: launchKind) {
                 showMainWindow()
             }
         }
@@ -99,16 +99,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
-    func applicationWillTerminate(_: Notification) {
-        core?.prepareForTermination()
-    }
-
     // MARK: - Launch helpers
 
     /// Opens the store, or shows an error alert and terminates.
     /// Returns `nil` when the app is about to terminate (architecture section 7).
     private func openStoreOrTerminate() -> Store? {
-        let storeURL = appSupportURL()
+        let storeURL = profilingStoreURL() ?? appSupportURL()
         do {
             return try Store(configuration: .onDisk(storeURL))
         } catch {
@@ -271,6 +267,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         process.arguments = ["-n", executableURL.path]
         try? process.run()
+    }
+
+    // MARK: - Profiling store
+
+    /// Returns a store directory when `--profiling-store <dir>` is passed, nil otherwise.
+    private func profilingStoreURL() -> URL? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let flagIndex = args.firstIndex(of: "--profiling-store"),
+              flagIndex + 1 < args.count
+        else {
+            return nil
+        }
+        let dir = URL(fileURLWithPath: args[flagIndex + 1], isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        logger.info("Profiling mode: store at \(dir.path, privacy: .public)")
+        return dir
+    }
+
+    /// True when the app was launched with `--profiling-store <dir>`.
+    private var isProfilingMode: Bool {
+        let args = ProcessInfo.processInfo.arguments
+        guard let flagIndex = args.firstIndex(of: "--profiling-store") else {
+            return false
+        }
+        return flagIndex + 1 < args.count
     }
 
     // MARK: - Paths

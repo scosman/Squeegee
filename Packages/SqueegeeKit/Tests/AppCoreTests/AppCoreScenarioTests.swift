@@ -35,14 +35,7 @@ private func standardMeta(title: String? = nil, documentURL: URL? = nil) -> Wind
     WindowMetadata(isStandard: true, title: title, documentURL: documentURL)
 }
 
-/// Yields enough times for pending Tasks to process. The executor and event
-/// handlers spawn Tasks that need multiple run-loop turns.
-@MainActor
-private func settle(rounds: Int = 10) async {
-    for _ in 0 ..< rounds {
-        await Task.yield()
-    }
-}
+// settle() is provided by TestSupport
 
 // MARK: - Tests
 
@@ -487,57 +480,7 @@ struct AppCoreScenarioTests {
                 "Focus signal from non-frontmost pid should be ignored")
     }
 
-    @Test("44: Restart restore of tracked windows")
-    @MainActor
-    func restartRestore() async throws {
-        let epoch = Date(timeIntervalSinceReferenceDate: 0)
-        let store = try makeStore()
-        let bundle = FakePortsBundle(now: epoch)
-
-        let launchDate = epoch.addingTimeInterval(-100)
-        let firstSeen = epoch.addingTimeInterval(-50)
-        let lastActive = epoch.addingTimeInterval(-20)
-
-        store.saveTrackedWindows([
-            TrackedWindowSnapshot(
-                key: WindowKey(pid: 900, windowID: 80),
-                bundleID: "com.test.app",
-                processLaunchDate: launchDate,
-                firstSeen: firstSeen,
-                lastActive: lastActive,
-                closeSentAt: nil
-            )
-        ])
-        store.save()
-
-        let window = observedWindow(
-            pid: 900, windowID: 80,
-            bundleID: "com.test.app", appName: "TestApp",
-            launchDate: launchDate
-        )
-        bundle.windowLister.windows = [window]
-        bundle.windowInspector.inspectionResults = [900: .inspected([
-            80: standardMeta(title: "Doc")
-        ])]
-        bundle.workspace.frontmost = nil
-
-        store.addAppRule(bundleID: "com.test.app", appName: "TestApp", rule: Rule(
-            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
-        ))
-
-        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
-        await core.start()
-
-        // Deadline = lastActive + 3600 = epoch - 20 + 3600 = epoch + 3580
-        let key = WindowKey(pid: 900, windowID: 80)
-        let schedules = core.plan.schedules.filter { $0.key == key }
-        #expect(!schedules.isEmpty)
-        if let sched = schedules.first, let deadline = sched.deadline {
-            let expected = lastActive.addingTimeInterval(3600)
-            let diff = abs(deadline.timeIntervalSince(expected))
-            #expect(diff < 1, "Restored deadline should match lastActive + closeAfter")
-        }
-    }
+    // Test 44: (removed: perf project — restart restore removed, tracked windows are in memory only)
 
     @Test("45: Rule edit through store triggers replan")
     @MainActor
@@ -755,6 +698,353 @@ struct AppCoreScenarioTests {
         let finderSchedules = core.schedules(for: .appRule(bundleID: "com.apple.finder"))
         #expect(finderSchedules.isEmpty,
                 "Settings Open Windows should show no Finder windows")
+    }
+
+    // MARK: - In-memory RuleSet cache tests (perf Phase 4)
+
+    @Test("50: Edit global rule closeAfter updates deadline")
+    @MainActor
+    func ruleEditCloseAfterUpdatesDeadline() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+
+        // Enable the global rule with a 2-hour deadline
+        store.settings.globalIsEnabled = true
+        store.settings.globalCloseAfterSeconds = 7200
+
+        let window = observedWindow(pid: 1100, windowID: 101, bundleID: "com.test.app", appName: "TestApp")
+        bundle.windowLister.windows = [window]
+        bundle.windowInspector.inspectionResults = [1100: .inspected([
+            101: standardMeta(title: "Doc")
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        let key = WindowKey(pid: 1100, windowID: 101)
+        let sched1 = core.plan.schedules.filter { $0.key == key }
+        #expect(sched1.first?.status == .scheduled, "Window should be scheduled with 2h rule")
+
+        // Change closeAfter to 30 minutes
+        store.settings.globalCloseAfterSeconds = 1800
+        await settle(rounds: 20)
+
+        let sched2 = core.plan.schedules.filter { $0.key == key }
+        #expect(sched2.first?.status == .scheduled, "Window should still be scheduled after edit")
+        // The deadline should now be at epoch + 1800, not epoch + 7200
+        if let deadline = sched2.first?.deadline {
+            let expected = epoch.addingTimeInterval(1800)
+            #expect(abs(deadline.timeIntervalSince(expected)) < 1,
+                    "Deadline should reflect the new 30-minute closeAfter")
+        } else {
+            Issue.record("Expected a deadline on the schedule")
+        }
+    }
+
+    @Test("51: Add app rule shows ruleSource .app")
+    @MainActor
+    func addAppRuleShowsAppRuleSource() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+
+        // Enable the global rule
+        store.settings.globalIsEnabled = true
+        store.settings.globalCloseAfterSeconds = 7200
+
+        let window = observedWindow(pid: 1200, windowID: 102, bundleID: "com.test.myapp", appName: "MyApp")
+        bundle.windowLister.windows = [window]
+        bundle.windowInspector.inspectionResults = [1200: .inspected([
+            102: standardMeta(title: "File")
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        let key = WindowKey(pid: 1200, windowID: 102)
+        let sched1 = core.plan.schedules.filter { $0.key == key }
+        #expect(sched1.first?.ruleSource == .global, "Before app rule, source should be .global")
+
+        // Add an app rule with a 1-hour deadline
+        store.addAppRule(bundleID: "com.test.myapp", appName: "MyApp", rule: Rule(
+            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
+        ))
+        store.save()
+        await settle(rounds: 20)
+
+        let sched2 = core.plan.schedules.filter { $0.key == key }
+        #expect(sched2.first?.ruleSource == .app, "After app rule, source should be .app")
+        if let deadline = sched2.first?.deadline {
+            let expected = epoch.addingTimeInterval(3600)
+            #expect(abs(deadline.timeIntervalSince(expected)) < 1,
+                    "Deadline should match the app rule's 1-hour closeAfter")
+        }
+    }
+
+    @Test("52: Remove app rule falls back to global")
+    @MainActor
+    func removeAppRuleFallsBackToGlobal() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+
+        // Enable the global rule
+        store.settings.globalIsEnabled = true
+        store.settings.globalCloseAfterSeconds = 7200
+
+        // Add an app rule
+        store.addAppRule(bundleID: "com.test.myapp", appName: "MyApp", rule: Rule(
+            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
+        ))
+        store.save()
+
+        let window = observedWindow(pid: 1300, windowID: 103, bundleID: "com.test.myapp", appName: "MyApp")
+        bundle.windowLister.windows = [window]
+        bundle.windowInspector.inspectionResults = [1300: .inspected([
+            103: standardMeta(title: "File")
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        let key = WindowKey(pid: 1300, windowID: 103)
+        let sched1 = core.plan.schedules.filter { $0.key == key }
+        #expect(sched1.first?.ruleSource == .app, "With app rule, source should be .app")
+
+        // Remove the app rule
+        store.removeAppRule(bundleID: "com.test.myapp")
+        store.save()
+        await settle(rounds: 20)
+
+        let sched2 = core.plan.schedules.filter { $0.key == key }
+        #expect(sched2.first?.ruleSource == .global, "After removing app rule, source should be .global")
+    }
+
+    @Test("53: Disable app rule via direct property edit marks schedule disabled")
+    @MainActor
+    func disableAppRuleMakesScheduleDisabled() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+
+        // Enable the global rule
+        store.settings.globalIsEnabled = true
+        store.settings.globalCloseAfterSeconds = 7200
+
+        // Add an enabled app rule
+        store.addAppRule(bundleID: "com.test.myapp", appName: "MyApp", rule: Rule(
+            isEnabled: true, closeAfter: 1800, measureFrom: .lastActive, quitPolicy: .never
+        ))
+        store.save()
+
+        let window = observedWindow(pid: 1400, windowID: 104, bundleID: "com.test.myapp", appName: "MyApp")
+        bundle.windowLister.windows = [window]
+        bundle.windowInspector.inspectionResults = [1400: .inspected([
+            104: standardMeta(title: "File")
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let key = WindowKey(pid: 1400, windowID: 104)
+        bundle.windowCloser.closeResults = [key: .pressed(
+            latest: standardMeta(title: "File"),
+            wasListed: true
+        )]
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        // Verify it starts as scheduled with the app rule
+        let sched1 = core.plan.schedules.filter { $0.key == key }
+        #expect(sched1.first?.status == .scheduled, "Window should be scheduled before disabling")
+
+        // Disable the app rule via direct @Model property edit + notifyRuleChanged(),
+        // simulating the effect of the SettingsUI onChange(of:) modifier
+        let appRule = store.appRule(bundleID: "com.test.myapp")
+        appRule?.isEnabled = false
+        store.notifyRuleChanged()
+        await settle(rounds: 20)
+
+        let sched2 = core.plan.schedules.filter { $0.key == key }
+        #expect(sched2.first?.status == .disabled, "Disabled app rule should give .disabled status")
+
+        // Advance well past what would have been the deadline — no close should fire
+        bundle.scheduler.advance(by: 3600)
+        await settle()
+
+        #expect(bundle.windowCloser.closedKeys.isEmpty,
+                "No close action should fire for a disabled app rule")
+    }
+
+    @Test("54: Edit app rule closeAfterSeconds via direct property edit updates deadline")
+    @MainActor
+    func editAppRuleCloseAfterViaPropertyEdit() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+
+        store.settings.globalIsEnabled = true
+        store.settings.globalCloseAfterSeconds = 7200
+
+        store.addAppRule(bundleID: "com.test.myapp", appName: "MyApp", rule: Rule(
+            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
+        ))
+        store.save()
+
+        let window = observedWindow(pid: 1500, windowID: 110, bundleID: "com.test.myapp", appName: "MyApp")
+        bundle.windowLister.windows = [window]
+        bundle.windowInspector.inspectionResults = [1500: .inspected([
+            110: standardMeta(title: "Doc")
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        let key = WindowKey(pid: 1500, windowID: 110)
+        let sched1 = core.plan.schedules.filter { $0.key == key }
+        if let deadline = sched1.first?.deadline {
+            let expected = epoch.addingTimeInterval(3600)
+            #expect(abs(deadline.timeIntervalSince(expected)) < 1, "Initial deadline should be 1h")
+        }
+
+        // Edit closeAfterSeconds via direct property edit + notifyRuleChanged()
+        let record = store.appRule(bundleID: "com.test.myapp")
+        record?.closeAfterSeconds = 1800
+        store.notifyRuleChanged()
+        await settle(rounds: 20)
+
+        let sched2 = core.plan.schedules.filter { $0.key == key }
+        if let deadline = sched2.first?.deadline {
+            let expected = epoch.addingTimeInterval(1800)
+            #expect(abs(deadline.timeIntervalSince(expected)) < 1,
+                    "Deadline should update to 30min after closeAfterSeconds edit")
+        } else {
+            Issue.record("Expected a deadline on the schedule")
+        }
+    }
+
+    @Test("55: Edit app rule measureFromRaw via property edit shifts plan deadline")
+    @MainActor
+    func editAppRuleMeasureFromViaPropertyEdit() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+
+        store.settings.globalIsEnabled = true
+        store.settings.globalCloseAfterSeconds = 7200
+
+        store.addAppRule(bundleID: "com.test.myapp", appName: "MyApp", rule: Rule(
+            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
+        ))
+        store.save()
+
+        let window = observedWindow(pid: 1600, windowID: 120, bundleID: "com.test.myapp", appName: "MyApp")
+        bundle.windowLister.windows = [window]
+        bundle.windowInspector.inspectionResults = [1600: .inspected([
+            120: standardMeta(title: "Doc")
+        ])]
+        // Focus the window so lastActive diverges from firstSeen (opened)
+        let app = ObservedApp(pid: 1600, bundleID: "com.test.myapp", name: "MyApp", launchDate: nil)
+        bundle.workspace.frontmost = app
+        bundle.windowInspector.focusedWindowIDs = [1600: 120]
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        // Advance 100s with focus to build qualifying focus time
+        bundle.scheduler.advance(by: 100)
+        await settle()
+
+        // Unfocus — lastActive is now ~epoch+100, firstSeen stays at epoch
+        let other = ObservedApp(pid: 1, bundleID: "com.other.app", name: "Other", launchDate: nil)
+        bundle.workspace.frontmost = other
+        bundle.windowInspector.focusedWindowIDs = [:]
+        bundle.workspace.send(.appActivated(other))
+        await settle()
+
+        let key = WindowKey(pid: 1600, windowID: 120)
+        let sched1 = core.plan.schedules.filter { $0.key == key }
+        let lastActiveDeadline = sched1.first?.deadline
+        // With measureFrom: .lastActive, deadline = ~epoch+100+3600
+        #expect(lastActiveDeadline != nil)
+
+        // Switch measureFrom to .opened (simulating the SettingsUI onChange effect)
+        let record = store.appRule(bundleID: "com.test.myapp")
+        record?.measureFromRaw = "opened"
+        store.notifyRuleChanged()
+        await settle(rounds: 20)
+
+        let sched2 = core.plan.schedules.filter { $0.key == key }
+        let openedDeadline = sched2.first?.deadline
+        // With measureFrom: .opened, deadline = epoch+3600 (earlier than lastActive-based)
+        #expect(openedDeadline != nil)
+        if let opened = openedDeadline, let lastActive = lastActiveDeadline {
+            #expect(opened < lastActive,
+                    "Opened-based deadline should be earlier than lastActive-based deadline")
+            let expectedOpened = epoch.addingTimeInterval(3600)
+            #expect(abs(opened.timeIntervalSince(expectedOpened)) < 1,
+                    "Opened-based deadline should be firstSeen + closeAfter")
+        }
+    }
+
+    @Test("56: Edit app rule quitPolicyRaw via property edit enables quit in plan")
+    @MainActor
+    func editAppRuleQuitPolicyViaPropertyEdit() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+
+        store.settings.globalIsEnabled = true
+        store.settings.globalCloseAfterSeconds = 7200
+
+        // Start with quitPolicy: .never
+        store.addAppRule(bundleID: "com.test.myapp", appName: "MyApp", rule: Rule(
+            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
+        ))
+        store.save()
+
+        let window = observedWindow(pid: 1700, windowID: 130, bundleID: "com.test.myapp", appName: "MyApp")
+        bundle.windowLister.windows = [window]
+        bundle.windowInspector.inspectionResults = [1700: .inspected([
+            130: standardMeta(title: "Doc")
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let key = WindowKey(pid: 1700, windowID: 130)
+        bundle.windowCloser.closeResults = [key: .pressed(
+            latest: standardMeta(title: "Doc"),
+            wasListed: true
+        )]
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        // Change quitPolicy to .always (simulating the SettingsUI onChange effect)
+        let record = store.appRule(bundleID: "com.test.myapp")
+        record?.quitPolicyRaw = "always"
+        store.notifyRuleChanged()
+        await settle(rounds: 20)
+
+        // Advance past deadline so Squeegee closes the window
+        bundle.scheduler.advance(by: 3600)
+        await settle()
+
+        // Window disappears from CG list (closed successfully)
+        bundle.windowLister.windows = []
+        bundle.scheduler.advance(by: 3)
+        await settle()
+
+        // With quitPolicy .always, after 60s grace the app should be quit.
+        // If the cached ruleSet were stale (.never), no quit would happen.
+        bundle.scheduler.advance(by: 61)
+        await settle()
+
+        #expect(bundle.appTerminator.terminatedPids.contains(1700),
+                "App should be quit after rule changed to .always via cached ruleSet")
     }
 }
 

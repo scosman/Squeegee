@@ -112,6 +112,19 @@ if [[ ! -d "$ARCHIVE_PATH" ]]; then
     error "Archive failed — no archive at $ARCHIVE_PATH"
 fi
 
+# ── Zip dSYM ───────────────────────────────────────────────────────────────────
+
+DSYM_PATH="$ARCHIVE_PATH/dSYMs/Squeegee.app.dSYM"
+DSYM_ZIP="$BUILD_DIR/Squeegee-${VERSION}.dSYM.zip"
+
+if [[ -d "$DSYM_PATH" ]]; then
+    log "Zipping dSYM"
+    ditto -c -k --keepParent "$DSYM_PATH" "$DSYM_ZIP"
+    log "dSYM archive: $DSYM_ZIP"
+else
+    log "WARNING: dSYM not found at $DSYM_PATH — skipping dSYM zip"
+fi
+
 # ── Export archive ─────────────────────────────────────────────────────────────
 
 log "Exporting archive"

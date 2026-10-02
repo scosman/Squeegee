@@ -25,7 +25,7 @@ SWIFTFORMAT_SHA256  := b990400779aceb7d7020796eb9ba814d4480543f671d38fc0ff48cb72
 SWIFTFORMAT_DIR := $(TOOLS_DIR)/swiftformat-$(SWIFTFORMAT_VERSION)
 SWIFTFORMAT := $(SWIFTFORMAT_DIR)/swiftformat
 
-.PHONY: help bootstrap generate build test lint format precommit-checks build-app run-app run-manual-tests hooks ci manual-tests-check release clean
+.PHONY: help bootstrap generate build test lint format precommit-checks build-app profile-app bench bench-profile run-app run-manual-tests hooks ci manual-tests-check release clean
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -100,6 +100,20 @@ build-app: generate ## NON-GATING: build both apps via xcodebuild (ad-hoc)
 	  -destination 'platform=macOS,arch=arm64' \
 	  -configuration Debug CODE_SIGNING_ALLOWED=YES \
 	  CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" build
+
+PROFILE_DIR := build/profile
+
+profile-app: generate ## Build a symbolicated Release app (Developer ID) for profiling
+	cd App && xcodebuild -quiet -project Squeegee.xcodeproj -scheme Squeegee \
+	  -destination 'platform=macOS,arch=arm64' \
+	  -configuration Release \
+	  -derivedDataPath ../$(PROFILE_DIR)/DerivedData build
+
+bench: ## Run the deterministic perf-bench benchmark (release)
+	swift run -c release --package-path $(PACKAGE) perf-bench
+
+bench-profile: ## Build + profile perf-bench; requires LABEL=<name>
+	scripts/profile/bench_profile.sh $(LABEL)
 
 run-app: generate ## Build + run the app with Apple Development signing
 	cd App && xcodebuild -quiet -project Squeegee.xcodeproj -scheme Squeegee \

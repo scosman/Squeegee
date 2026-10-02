@@ -74,7 +74,6 @@ public enum TrackerEvent: Sendable, Equatable {
     case closeVerification(WindowKey, at: Date)   // fired 10 s after closeSent
     case quitSent(pid: Int32, at: Date)
     case quitVerification(pid: Int32, at: Date)   // fired 30 s after quitSent
-    case restore([TrackedWindowSnapshot], at: Date)
 }
 
 public enum TrackerOutput: Sendable, Equatable {
@@ -84,10 +83,7 @@ public enum TrackerOutput: Sendable, Equatable {
     case permissionLost
 }
 
-public struct TrackedWindowSnapshot: Sendable, Equatable, Codable {   // persistence form
-    public let key: WindowKey; public let bundleID: String; public let processLaunchDate: Date?
-    public let firstSeen: Date; public let lastActive: Date?; public let closeSentAt: Date?
-}
+// TrackedWindowSnapshot removed: perf project — tracked window state is in memory only.
 ```
 
 Constants: `Tracker.focusQualifyingDuration = 5`, `Tracker.alwaysQuitGrace = 60`, `Tracker.closeVerificationDelay = 10`, `Tracker.quitVerificationDelay = 30`.
@@ -157,11 +153,7 @@ This measures "active" exactly, with event timestamps and no sampling (functiona
 - `.quitSent(pid, at)`: `quitState = .sent(at)`.
 - `.quitVerification(pid, at)`: if the app still exists and `quitState == .sent`, set `.declined`. It is reset to `.none` only when the app has a present window again (presence recompute). There is no quit retry loop.
 
-**`.restore(snapshots, at)`** (once, after the first scan at startup): for each snapshot whose `key` is tracked, and whose app's `launchDate` equals `processLaunchDate` (within 1 s, or both nil), and whose `bundleID` matches:
-- set `firstSeen` and `lastActive`;
-- if `closeSentAt != nil`, set `closeState = .declined(closeSentAt)`.
-
-Snapshots that do not match are dropped.
+<!-- .restore event removed: perf project — tracked window state is in memory only -->
 
 ## 5. `Planner`
 
@@ -270,7 +262,6 @@ public var showMainWindow: (@MainActor () -> Void)?  // set by the AppDelegate
 public let store: Store
 
 public func start() async
-public func prepareForTermination()                  // flush the tracker snapshot now
 
 public func pause(_ option: PauseOption)
 public func resume()
@@ -321,17 +312,16 @@ public protocol Cancellable: Sendable { func cancel() }
 3. Start one `Task` per stream (`workspace.events()`, `focus.signals()`, `permission.changes()`). Each loop calls `await handle(...)` on the main actor.
 4. Run the initial sync:
    1. `scan()`.
-   2. `reduce(.restore(store.loadTrackedWindows(), at: now))`.
-   3. Inspect every pid that has windows, one after another.
-   4. `syncFocus()`.
-   5. If the displays are awake, start the scan timer.
+   2. Inspect every pid that has windows, one after another.
+   3. `syncFocus()`.
+   4. If the displays are awake, start the scan timer.
 5. Start rule observation (§6.5) and call `replan()`.
 
 **Helpers:**
 - `scan()`: `await windowLister.listWindows()` → `reduce(.windowList)`.
 - `inspect(pid)`: `await windowInspector.inspect(pid:)` → `reduce(.inspected)`. At most one inspection runs per pid at a time. If another request comes while one runs, it is merged into one more run after it.
 - `syncFocus()`: `app = workspace.frontmostApp()`; `await focus.observe(pid: app?.pid)`; `id = await windowInspector.focusedWindowID(pid:)` → `reduce(.focusChanged(app, id, at: now))`. The timestamp is taken before the awaits.
-- `reduce(event)`: apply `TrackerReducer.reduce`, handle the outputs (below), mark the tracker dirty for persistence, then `replan()`.
+- `reduce(event)`: apply `TrackerReducer.reduce`, handle the outputs (below), then `replan()`.
 
 **Tracker outputs:**
 - `.windowClosedBySqueegee(w, at)` → `store.appendClosure(ClosureValue(bundleID: w.bundleID, appName: w.appName, windowTitle: w.metadata?.title, documentURL: w.metadata?.documentURL, kind: .windowClosed, closedAt: at))`.
@@ -406,9 +396,9 @@ private func observeRules() {
 
 Each of these saves the store and replans.
 
-### 6.7 Persistence of tracker state
+### 6.7 Tracker state (in memory only)
 
-Changes to `firstSeen`, `lastActive`, or `closeState` mark the tracker dirty. A 5 s debounce, then `store.saveTrackedWindows(state.snapshots())`. `prepareForTermination()` saves right away. The AppDelegate calls it from `applicationWillTerminate`.
+Tracked window state (opened time, last-active time, close state) lives in memory only and resets when Squeegee restarts. The SwiftData `TrackedWindowRecord` table was removed in schema V2.
 
 ### 6.8 Onboarding and suggestions
 
@@ -458,7 +448,7 @@ Status text (Presentation; adds to ui_design §7): `.scheduled` → `in 2h 10m`;
 15. `appTerminated` with windows in `.sent` → no closure outputs.
 16. Presence: an unknown-metadata window keeps the app present; the last standard window gone → `noStandardWindowsSince` set only if `hadStandardWindow`.
 17. `quitVerification` with the app alive → `.declined`; the app gets a window → `.none`.
-18. `restore`: a matching pid+window+bundle+launch date restores the times; a mismatched launch date is dropped; `closeSentAt` → `.declined`.
+18. (removed: perf project — restore event removed)
 
 **Planner**
 19. Rule disabled → `.disabled`, no action.
@@ -488,7 +478,7 @@ Status text (Presentation; adds to ui_design §7): `.scheduled` → `in 2h 10m`;
 41. Permission revoked (`notTrusted` from inspect) → state denied, no actions, icon state; granted by notification → resumes.
 42. Displays sleep → the scan timer stops (no `listWindows` calls); wake → scan + focus sync.
 43. A focus signal from a non-frontmost pid is ignored.
-44. Restart: tracked windows persisted → a new AppCore with the same fake windows restores `firstSeen`/`lastActive`.
+44. (removed: perf project — restart restore removed, tracked windows are in memory only)
 45. A rule edit through a store record → replan without an explicit call (observation).
 46. Onboarding: suggestions filter by installed apps; apply creates enabled rules; completeOnboarding sets the flag, enables the login item, and changes the route.
 47. `reopen`: with a URL → `opener.open`; without one → `launch`; a quit record → `launch`.

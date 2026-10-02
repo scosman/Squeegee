@@ -33,8 +33,6 @@ public enum TrackerReducer {
             handleQuitSent(&state, pid: pid, at: at)
         case let .quitVerification(pid, at):
             handleQuitVerification(&state, pid: pid, at: at)
-        case let .restore(snapshots, at):
-            handleRestore(&state, snapshots: snapshots, at: at)
         }
     }
 

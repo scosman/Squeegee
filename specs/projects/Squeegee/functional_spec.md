@@ -65,7 +65,7 @@ Squeegee never manages its own windows.
 No macOS API reports when a window opened. **Opened time = the first time Squeegee saw the window.**
 
 - Windows that are already open when Squeegee starts get "opened = now". This means the first launch (or a Mac restart) never causes a burst of closures.
-- If Squeegee quits and restarts while the target app keeps running, it restores the saved opened/last-active times for windows it can match (same app process and same window ID). Other windows start fresh.
+- Tracked window times (opened, last active, close state) are in memory only and reset when Squeegee restarts. All open windows start fresh after a restart.
 
 ### 3.3 Last active time
 
@@ -275,7 +275,6 @@ Stored locally on disk (no network, no telemetry, no accounts):
 - Global rule and app rules.
 - General settings (menu bar icon, pause state). Launch at login uses the system login item state.
 - Onboarding completed flag.
-- Tracked window times (opened, last active, close sent) for restore after a Squeegee restart (§3.2).
 - Last 1000 closure records (§9).
 
 ## 13. Edge Cases
@@ -283,7 +282,7 @@ Stored locally on disk (no network, no telemetry, no accounts):
 | Case | Behavior |
 |---|---|
 | Target app quits or crashes | Its windows are no longer tracked. Nothing is recorded as a closure. |
-| Target app relaunches and restores windows | Restored windows are new windows (opened = first seen). |
+| Target app relaunches and restores windows | Restored windows are new windows (opened = first seen). Tracked window times are in memory only and do not survive a Squeegee restart. |
 | Window moves between Spaces, is minimized, or goes full-screen | Same window; times are kept. Minimized and other-Space windows are never "active" until the user brings them forward. |
 | Closing a full-screen window | Allowed. macOS removes its Space. While the user is not on its Space, its title and URL are not readable; the last known values are kept. macOS also adds an extra window for a full-screen window; it stays unmanaged until Squeegee can inspect it. |
 | Window title changes (e.g. Finder navigates) | Same window; the title shown in the UI updates. The closure record uses the title at close time. |

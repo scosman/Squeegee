@@ -146,6 +146,14 @@ let package = Package(
             swiftSettings: warningsAsErrors
         ),
 
+        // perf-bench CLI — deterministic benchmark for AppCore CPU
+        .executableTarget(
+            name: "perf-bench",
+            dependencies: ["AppCore", "Persistence", "Engine", "TestSupport"],
+            path: "Sources/PerfBench",
+            swiftSettings: warningsAsErrors
+        ),
+
         // manual-tests-check CLI
         .executableTarget(
             name: "manual-tests-check",
