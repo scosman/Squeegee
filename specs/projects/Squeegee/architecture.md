@@ -120,7 +120,7 @@ public struct ResolvedRule: Equatable, Sendable { public let rule: Rule; public 
 
 ### 4.2 SwiftData schema (`Persistence`)
 
-Versioned from day 1: `SqueegeeSchemaV1: VersionedSchema` and `SqueegeeMigrationPlan` (Biscotti pattern), with no migrations yet. The store file is `~/Library/Application Support/Squeegee/Squeegee.store`.
+Versioned: `SqueegeeSchemaV1` and `SqueegeeSchemaV2: VersionedSchema`, with `SqueegeeMigrationPlan` (Biscotti pattern). V1 → V2 is a lightweight migration that drops `TrackedWindowRecord` (tracked window state is now in memory only). The store file is `~/Library/Application Support/Squeegee/Squeegee.store`.
 
 ```swift
 @Model final class AppRuleRecord {
@@ -155,16 +155,7 @@ Versioned from day 1: `SqueegeeSchemaV1: VersionedSchema` and `SqueegeeMigration
     var closedAt: Date
 }
 
-@Model final class TrackedWindowRecord {      // for restore after a Squeegee restart (§3.2 functional spec)
-    #Unique<TrackedWindowRecord>([\.pid, \.windowID])
-    var pid: Int32
-    var windowID: UInt32
-    var bundleID: String
-    var processLaunchDate: Date?              // guards against pid reuse
-    var firstSeen: Date
-    var lastActive: Date?
-    var closeSentAt: Date?
-}
+// TrackedWindowRecord was removed in schema V2 — tracked window state is now in memory only.
 ```
 
 Launch at login is **not** stored: `SMAppService.mainApp.status` is the source of truth.
@@ -182,9 +173,8 @@ public func removeAppRule(bundleID: String)
 public func ruleSet() -> RuleSet                        // reads records → Engine value (observation-tracked reads)
 public func appendClosure(_ value: ClosureValue)        // insert, then trim to newest 1000 (FIFO)
 public func recentClosures(limit: Int) -> [ClosureValue]
-public func saveTrackedWindows(_ windows: [TrackedWindowSnapshot])  // upsert by (pid, windowID); delete rows not in input
-public func loadTrackedWindows() -> [TrackedWindowSnapshot]
 public func save()                                      // explicit save after writes that must persist now
+// saveTrackedWindows/loadTrackedWindows removed in schema V2 — tracked window state is in memory only.
 ```
 
 **Bindings.** Settings views bind directly to `@Model` objects with `@Bindable` (for example, `Toggle("…", isOn: $rule.isEnabled)`). This is the reason SwiftData was chosen over JSON. Values that need clamping or enum mapping are exposed as computed `Binding`s by the view model (for example, `closeAfter` as a `TimeInterval` that clamps to `Rule.closeAfterRange`).
@@ -283,8 +273,8 @@ There is no periodic focus sampling. Focus time is measured with event timestamp
 |---|---|---|
 | Engine (reducer, planner, rule resolution, catalog matching) | Table-driven Swift Testing, pure values, no fakes needed | Every branch; the case list is in engine.md §8 |
 | Presentation (formatters, rule summaries, MenuContent builder) | Pure unit tests with fixed dates, `Locale(identifier: "en_US_POSIX")` and fixed time zone | Every row of ui_design §7 and every menu state of ui_design §3.2 |
-| Persistence | In-memory `ModelContainer` | Singleton creation, unique rule, FIFO trim at 1000, tracked-window upsert/delete, `ruleSet()` mapping, observation fires on rule edit |
-| AppCore | Scenario tests with `TestSupport` fakes (`FakeWindowSystem`, `FakeWorkspaceEvents`, `FakeScheduler`, `FakePermission`, …) and an in-memory store | Full user stories: open → close after N hours; focus 4 s vs 6 s; save dialog / no retry; Always-quit after 60 s; pause/resume; permission revoked/granted; restart restore; dry run |
+| Persistence | In-memory `ModelContainer` | Singleton creation, unique rule, FIFO trim at 1000, `ruleSet()` mapping, observation fires on rule edit, V1→V2 migration (drops tracked windows) |
+| AppCore | Scenario tests with `TestSupport` fakes (`FakeWindowSystem`, `FakeWorkspaceEvents`, `FakeScheduler`, `FakePermission`, …) and an in-memory store | Full user stories: open → close after N hours; focus 4 s vs 6 s; save dialog / no retry; Always-quit after 60 s; pause/resume; permission revoked/granted; dry run |
 | View models (Onboarding, Settings, MenuBar) | Unit tests over a fake-backed `AppCore` fixture | Step flow, gating, suggestions selection, add/remove app, selection restore |
 | MenuRenderer | Unit test: `MenuContent` → `NSMenu`; assert item titles, subtitles, enabled, tooltips, section headers | All states |
 | SystemBridge | Pure parsing helpers unit-tested with fixture dictionaries (CG window dict → `ObservedWindow`, AXDocument string → URL). Live AX/CG behavior is covered by the ManualTestApp | Parsing only |

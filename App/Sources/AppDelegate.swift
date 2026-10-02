@@ -99,10 +99,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
-    func applicationWillTerminate(_: Notification) {
-        core?.prepareForTermination()
-    }
-
     // MARK: - Launch helpers
 
     /// Opens the store, or shows an error alert and terminates.

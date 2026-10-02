@@ -2,6 +2,7 @@ import Engine
 import Foundation
 import Observation
 import Persistence
+import SwiftData
 import Synchronization
 import Testing
 
@@ -188,84 +189,6 @@ struct StoreTests {
         #expect(recent.first?.kind == .appQuit)
     }
 
-    // MARK: - Tracked windows
-
-    @Test func saveAndLoadTrackedWindows() throws {
-        let store = try makeStore()
-        let now = Date()
-        let snapshots = [
-            TrackedWindowSnapshot(
-                key: WindowKey(pid: 100, windowID: 1),
-                bundleID: "com.test.a", processLaunchDate: now,
-                firstSeen: now, lastActive: now, closeSentAt: nil
-            ),
-            TrackedWindowSnapshot(
-                key: WindowKey(pid: 100, windowID: 2),
-                bundleID: "com.test.a", processLaunchDate: now,
-                firstSeen: now, lastActive: nil, closeSentAt: now
-            )
-        ]
-
-        store.saveTrackedWindows(snapshots)
-        let loaded = store.loadTrackedWindows()
-        #expect(loaded.count == 2)
-
-        let byKey = Dictionary(loaded.map { ($0.key, $0) }, uniquingKeysWith: { first, _ in first })
-        let first = byKey[WindowKey(pid: 100, windowID: 1)]
-        #expect(first != nil)
-        #expect(first?.bundleID == "com.test.a")
-        #expect(first?.lastActive != nil)
-        #expect(first?.closeSentAt == nil)
-
-        let second = byKey[WindowKey(pid: 100, windowID: 2)]
-        #expect(second?.closeSentAt != nil)
-    }
-
-    @Test func saveTrackedWindowsUpsertAndDeleteStale() throws {
-        let store = try makeStore()
-        let now = Date()
-        let initial = [
-            TrackedWindowSnapshot(
-                key: WindowKey(pid: 100, windowID: 1),
-                bundleID: "com.test.a", processLaunchDate: now,
-                firstSeen: now, lastActive: nil, closeSentAt: nil
-            ),
-            TrackedWindowSnapshot(
-                key: WindowKey(pid: 100, windowID: 2),
-                bundleID: "com.test.a", processLaunchDate: now,
-                firstSeen: now, lastActive: nil, closeSentAt: nil
-            )
-        ]
-        store.saveTrackedWindows(initial)
-        #expect(store.loadTrackedWindows().count == 2)
-
-        // Save with only window 1 updated, window 2 removed, window 3 added
-        let later = now.addingTimeInterval(60)
-        let updated = [
-            TrackedWindowSnapshot(
-                key: WindowKey(pid: 100, windowID: 1),
-                bundleID: "com.test.a", processLaunchDate: now,
-                firstSeen: now, lastActive: later, closeSentAt: nil
-            ),
-            TrackedWindowSnapshot(
-                key: WindowKey(pid: 100, windowID: 3),
-                bundleID: "com.test.a", processLaunchDate: now,
-                firstSeen: later, lastActive: nil, closeSentAt: nil
-            )
-        ]
-        store.saveTrackedWindows(updated)
-
-        let loaded = store.loadTrackedWindows()
-        #expect(loaded.count == 2)
-        let keys = Set(loaded.map(\.key))
-        #expect(keys.contains(WindowKey(pid: 100, windowID: 1)))
-        #expect(keys.contains(WindowKey(pid: 100, windowID: 3)))
-        #expect(!keys.contains(WindowKey(pid: 100, windowID: 2)))
-
-        let window1 = loaded.first(where: { $0.key.windowID == 1 })
-        #expect(window1?.lastActive == later)
-    }
-
     // MARK: - Save
 
     @Test func explicitSaveDoesNotThrow() throws {
@@ -347,5 +270,68 @@ struct StoreObservationTests {
 
         store.settings.globalIsEnabled = true
         #expect(flag.value)
+    }
+}
+
+// MARK: - Migration suite
+
+@MainActor
+@Suite("Store Migration")
+struct StoreMigrationTests {
+    /// Creates a V1 store on disk with a rule, settings, closure, and tracked window.
+    /// Returns the temp directory (caller must clean up).
+    private func populateV1Store() throws -> URL {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("squeegee-migration-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        let storeURL = tempDir.appendingPathComponent("Squeegee.store")
+        let v1Schema = Schema(versionedSchema: SqueegeeSchemaV1.self)
+        let v1Config = ModelConfiguration("Squeegee", schema: v1Schema, url: storeURL, allowsSave: true)
+        let v1Container = try ModelContainer(for: v1Schema, configurations: [v1Config])
+        let ctx = v1Container.mainContext
+
+        ctx.insert(SqueegeeSchemaV1.AppRuleRecord(
+            bundleID: "com.test.migrated", appName: "MigratedApp",
+            isEnabled: true, closeAfterSeconds: 7200,
+            measureFromRaw: "opened", quitPolicyRaw: "always"
+        ))
+        let settings = SqueegeeSchemaV1.AppSettingsRecord()
+        settings.onboardingComplete = true
+        settings.globalCloseAfterSeconds = 9000
+        ctx.insert(settings)
+        ctx.insert(SqueegeeSchemaV1.ClosureRecord(
+            bundleID: "com.test.closed", appName: "ClosedApp",
+            windowTitle: "Doc.pdf", documentURL: nil,
+            kindRaw: "windowClosed", closedAt: Date()
+        ))
+        ctx.insert(SqueegeeSchemaV1.TrackedWindowRecord(
+            pid: 42, windowID: 99, bundleID: "com.test.tracked",
+            processLaunchDate: nil, firstSeen: Date(), lastActive: nil, closeSentAt: nil
+        ))
+        try ctx.save()
+        return tempDir
+    }
+
+    @Test func migratesV1StoreToV2KeepingRulesSettingsAndHistory() throws {
+        let tempDir = try populateV1Store()
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let store = try Store(configuration: .onDisk(tempDir))
+
+        let rules = store.appRules()
+        #expect(rules.count == 1)
+        #expect(rules.first?.bundleID == "com.test.migrated")
+        #expect(rules.first?.appName == "MigratedApp")
+        #expect(rules.first?.closeAfterSeconds == 7200)
+        #expect(rules.first?.measureFromRaw == "opened")
+
+        #expect(store.settings.onboardingComplete == true)
+        #expect(store.settings.globalCloseAfterSeconds == 9000)
+
+        let closures = store.recentClosures(limit: 10)
+        #expect(closures.count == 1)
+        #expect(closures.first?.bundleID == "com.test.closed")
+        #expect(closures.first?.windowTitle == "Doc.pdf")
     }
 }

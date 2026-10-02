@@ -26,7 +26,6 @@ extension TrackerEvent {
         case .closeVerification: "closeVerification"
         case .quitSent: "quitSent"
         case .quitVerification: "quitVerification"
-        case .restore: "restore"
         }
     }
 }

@@ -70,8 +70,6 @@ public final class AppCore {
     // MARK: - Internal state
 
     private var trackerState = TrackerState()
-    private var trackerDirty = false
-    private var persistenceDebounce: (any Engine.Cancellable)?
     private var scanTimer: (any Engine.Cancellable)?
     private var deadlineTimer: (any Engine.Cancellable)?
     private var eventTasks: [Task<Void, Never>] = []
@@ -106,7 +104,6 @@ public final class AppCore {
     private static let scanInterval: TimeInterval = 60
     private static let scanTolerance: TimeInterval = 6
     private static let deadlineTolerance: TimeInterval = 5
-    private static let persistenceDebounceInterval: TimeInterval = 5
     private static let closeVerificationScanDelay: TimeInterval = 2
     private static let inspectionThrottleInterval: TimeInterval = 10
 
@@ -153,7 +150,6 @@ public final class AppCore {
 
         // 4. Initial sync
         await scan()
-        reduce(.restore(store.loadTrackedWindows(), at: ports.scheduler.now()))
         await inspectAllPids()
         await syncFocus()
         if !ports.workspace.areDisplaysAsleep() {
@@ -165,11 +161,6 @@ public final class AppCore {
         replan()
         let currentRoute = route
         logger.info("AppCore.start() complete, route=\(String(describing: currentRoute), privacy: .public)")
-    }
-
-    /// Saves tracker state immediately before the app terminates.
-    public func prepareForTermination() {
-        flushTrackerState()
     }
 
     // MARK: - Pause
@@ -555,7 +546,6 @@ extension AppCore {
         )
         let outputs = TrackerReducer.reduce(&trackerState, event)
         handleOutputs(outputs)
-        markTrackerDirty()
         replan()
         Signposts.signposter.endInterval("reduce", reduceState)
     }
@@ -819,30 +809,6 @@ extension AppCore {
     private func stopScanTimer() {
         scanTimer?.cancel()
         scanTimer = nil
-    }
-}
-
-// MARK: - Tracker persistence
-
-extension AppCore {
-    private func markTrackerDirty() {
-        trackerDirty = true
-        persistenceDebounce?.cancel()
-        persistenceDebounce = ports.scheduler.schedule(
-            at: ports.scheduler.now().addingTimeInterval(Self.persistenceDebounceInterval),
-            tolerance: 1
-        ) { [weak self] in
-            self?.flushTrackerState()
-        }
-    }
-
-    private func flushTrackerState() {
-        guard trackerDirty else { return }
-        trackerDirty = false
-        persistenceDebounce?.cancel()
-        persistenceDebounce = nil
-        store.saveTrackedWindows(trackerState.snapshots())
-        store.save()
     }
 }
 

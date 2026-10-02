@@ -5,11 +5,10 @@ import SwiftData
 
 private let logger = Logger(subsystem: "net.scosman.squeegee", category: "Store")
 
-// Type aliases for the V1 model types used throughout the module.
-public typealias AppRuleRecord = SqueegeeSchemaV1.AppRuleRecord
-public typealias AppSettingsRecord = SqueegeeSchemaV1.AppSettingsRecord
-public typealias ClosureRecord = SqueegeeSchemaV1.ClosureRecord
-public typealias TrackedWindowRecord = SqueegeeSchemaV1.TrackedWindowRecord
+// Type aliases for the V2 model types used throughout the module.
+public typealias AppRuleRecord = SqueegeeSchemaV2.AppRuleRecord
+public typealias AppSettingsRecord = SqueegeeSchemaV2.AppSettingsRecord
+public typealias ClosureRecord = SqueegeeSchemaV2.ClosureRecord
 
 /// How the store's backing container is configured.
 public enum StoreConfiguration: Sendable {
@@ -48,7 +47,7 @@ public final class Store {
     // MARK: - Init
 
     public init(configuration: StoreConfiguration) throws {
-        let schema = Schema(versionedSchema: SqueegeeSchemaV1.self)
+        let schema = Schema(versionedSchema: SqueegeeSchemaV2.self)
         let modelConfig = switch configuration {
         case let .onDisk(url):
             ModelConfiguration(
@@ -201,61 +200,6 @@ public final class Store {
         }
     }
 
-    // MARK: - Tracked windows
-
-    /// Upserts tracked window records by (pid, windowID). Deletes rows not
-    /// present in the input.
-    public func saveTrackedWindows(_ windows: [TrackedWindowSnapshot]) {
-        let existing = loadTrackedWindowRecords()
-        var existingByKey: [WindowKey: TrackedWindowRecord] = [:]
-        for record in existing {
-            existingByKey[WindowKey(pid: record.pid, windowID: record.windowID)] = record
-        }
-
-        let inputKeys = Set(windows.map(\.key))
-
-        // Delete stale records
-        for (key, record) in existingByKey where !inputKeys.contains(key) {
-            context.delete(record)
-        }
-
-        // Upsert
-        for snapshot in windows {
-            if let record = existingByKey[snapshot.key] {
-                record.bundleID = snapshot.bundleID
-                record.processLaunchDate = snapshot.processLaunchDate
-                record.firstSeen = snapshot.firstSeen
-                record.lastActive = snapshot.lastActive
-                record.closeSentAt = snapshot.closeSentAt
-            } else {
-                let record = TrackedWindowRecord(
-                    pid: snapshot.key.pid,
-                    windowID: snapshot.key.windowID,
-                    bundleID: snapshot.bundleID,
-                    processLaunchDate: snapshot.processLaunchDate,
-                    firstSeen: snapshot.firstSeen,
-                    lastActive: snapshot.lastActive,
-                    closeSentAt: snapshot.closeSentAt
-                )
-                context.insert(record)
-            }
-        }
-    }
-
-    /// Loads all tracked window records as Engine snapshots.
-    public func loadTrackedWindows() -> [TrackedWindowSnapshot] {
-        loadTrackedWindowRecords().map { record in
-            TrackedWindowSnapshot(
-                key: WindowKey(pid: record.pid, windowID: record.windowID),
-                bundleID: record.bundleID,
-                processLaunchDate: record.processLaunchDate,
-                firstSeen: record.firstSeen,
-                lastActive: record.lastActive,
-                closeSentAt: record.closeSentAt
-            )
-        }
-    }
-
     /// Explicit save for writes that must persist immediately.
     public func save() {
         do {
@@ -310,16 +254,6 @@ public final class Store {
             }
         } catch {
             logger.error("Failed to fetch oldest closures for trim: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    private func loadTrackedWindowRecords() -> [TrackedWindowRecord] {
-        let descriptor = FetchDescriptor<TrackedWindowRecord>()
-        do {
-            return try context.fetch(descriptor)
-        } catch {
-            logger.error("Failed to fetch tracked windows: \(error.localizedDescription, privacy: .public)")
-            return []
         }
     }
 }

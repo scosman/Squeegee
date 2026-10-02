@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: - Close/quit lifecycle, restore, and shared helpers
+// MARK: - Close/quit lifecycle and shared helpers
 
 extension TrackerReducer {
     // MARK: - Close lifecycle
@@ -90,42 +90,6 @@ extension TrackerReducer {
             return []
         }
         state.apps[pid]?.quitState = .declined
-        return []
-    }
-
-    // MARK: - Restore
-
-    static func handleRestore(
-        _ state: inout TrackerState,
-        snapshots: [TrackedWindowSnapshot],
-        at _: Date
-    ) -> [TrackerOutput] {
-        for snapshot in snapshots {
-            guard let window = state.windows[snapshot.key],
-                  window.bundleID == snapshot.bundleID
-            else {
-                continue
-            }
-
-            // Check that the app's launchDate matches (within 1 s, or both nil)
-            let app = state.apps[snapshot.key.pid]
-            let launchDatesMatch: Bool = switch (app?.launchDate, snapshot.processLaunchDate) {
-            case (nil, nil):
-                true
-            case let (appDate?, snapDate?):
-                abs(appDate.timeIntervalSince(snapDate)) <= 1
-            default:
-                false
-            }
-
-            guard launchDatesMatch else { continue }
-
-            state.windows[snapshot.key]?.firstSeen = snapshot.firstSeen
-            state.windows[snapshot.key]?.lastActive = snapshot.lastActive
-            if let closeSentAt = snapshot.closeSentAt {
-                state.windows[snapshot.key]?.closeState = .declined(at: closeSentAt)
-            }
-        }
         return []
     }
 

@@ -139,7 +139,6 @@ public enum TrackerEvent: Sendable, Equatable {
     case closeVerification(WindowKey, at: Date)
     case quitSent(pid: Int32, at: Date)
     case quitVerification(pid: Int32, at: Date)
-    case restore([TrackedWindowSnapshot], at: Date)
 }
 
 // swiftlint:enable identifier_name
@@ -156,34 +155,6 @@ public enum TrackerOutput: Sendable, Equatable {
 }
 
 // swiftlint:enable identifier_name
-
-// MARK: - Tracked window snapshot (persistence)
-
-/// Serializable form of a tracked window, used for restore after restart.
-public struct TrackedWindowSnapshot: Sendable, Equatable, Codable {
-    public let key: WindowKey
-    public let bundleID: String
-    public let processLaunchDate: Date?
-    public let firstSeen: Date
-    public let lastActive: Date?
-    public let closeSentAt: Date?
-
-    public init(
-        key: WindowKey,
-        bundleID: String,
-        processLaunchDate: Date?,
-        firstSeen: Date,
-        lastActive: Date?,
-        closeSentAt: Date?
-    ) {
-        self.key = key
-        self.bundleID = bundleID
-        self.processLaunchDate = processLaunchDate
-        self.firstSeen = firstSeen
-        self.lastActive = lastActive
-        self.closeSentAt = closeSentAt
-    }
-}
 
 // MARK: - Closure value
 

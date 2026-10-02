@@ -418,62 +418,7 @@ private func key(_ pid: Int32 = 1, _ windowID: UInt32 = 100) -> WindowKey {
     #expect(state.apps[1]?.quitState == QuitState.none)
 }
 
-// MARK: - Test 18: Restore
-
-@Test func restore_matchingPidLaunchDate_restoresTimesAndCloseSent() {
-    let launchDate = date(-1000)
-    var state = TrackerState()
-    let observed = makeObservedWindow(launchDate: launchDate)
-    _ = TrackerReducer.reduce(&state, .windowList([observed], at: t0))
-
-    let matchingSnapshot = TrackedWindowSnapshot(
-        key: key(),
-        bundleID: "com.test.app",
-        processLaunchDate: launchDate,
-        firstSeen: date(-500),
-        lastActive: date(-100),
-        closeSentAt: nil
-    )
-
-    // Test matching snapshot restores times
-    _ = TrackerReducer.reduce(&state, .restore([matchingSnapshot], at: t0))
-    #expect(state.windows[key()]?.firstSeen == date(-500))
-    #expect(state.windows[key()]?.lastActive == date(-100))
-
-    // Reset and test closeSentAt -> declined
-    state.windows[key()]?.firstSeen = t0
-    state.windows[key()]?.lastActive = nil
-    state.windows[key()]?.closeState = .none
-    let closeSentSnapshot = TrackedWindowSnapshot(
-        key: key(),
-        bundleID: "com.test.app",
-        processLaunchDate: launchDate,
-        firstSeen: date(-500),
-        lastActive: date(-100),
-        closeSentAt: date(-50)
-    )
-    _ = TrackerReducer.reduce(&state, .restore([closeSentSnapshot], at: t0))
-    #expect(state.windows[key()]?.firstSeen == date(-500))
-    #expect(state.windows[key()]?.lastActive == date(-100))
-    #expect(state.windows[key()]?.closeState == .declined(at: date(-50)))
-}
-
-@Test func restore_mismatchedLaunchDate_droppedSnapshot() {
-    var state = TrackerState()
-    let obs = makeObservedWindow(launchDate: date(-3000))
-    _ = TrackerReducer.reduce(&state, .windowList([obs], at: t0))
-
-    let mismatchSnapshot = TrackedWindowSnapshot(
-        key: key(),
-        bundleID: "com.test.app",
-        processLaunchDate: date(-2000), // different from app launch date
-        firstSeen: date(-500),
-        lastActive: date(-100),
-        closeSentAt: nil
-    )
-    _ = TrackerReducer.reduce(&state, .restore([mismatchSnapshot], at: t0))
-    #expect(state.windows[key()]?.firstSeen == t0) // not restored
-}
+// MARK: - Test 18: (removed: perf project — restore event removed)
 
 // MARK: - Test 19: Non-standard sibling does not prevent quitAfterSqueegeeClose
 

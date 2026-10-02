@@ -480,57 +480,7 @@ struct AppCoreScenarioTests {
                 "Focus signal from non-frontmost pid should be ignored")
     }
 
-    @Test("44: Restart restore of tracked windows")
-    @MainActor
-    func restartRestore() async throws {
-        let epoch = Date(timeIntervalSinceReferenceDate: 0)
-        let store = try makeStore()
-        let bundle = FakePortsBundle(now: epoch)
-
-        let launchDate = epoch.addingTimeInterval(-100)
-        let firstSeen = epoch.addingTimeInterval(-50)
-        let lastActive = epoch.addingTimeInterval(-20)
-
-        store.saveTrackedWindows([
-            TrackedWindowSnapshot(
-                key: WindowKey(pid: 900, windowID: 80),
-                bundleID: "com.test.app",
-                processLaunchDate: launchDate,
-                firstSeen: firstSeen,
-                lastActive: lastActive,
-                closeSentAt: nil
-            )
-        ])
-        store.save()
-
-        let window = observedWindow(
-            pid: 900, windowID: 80,
-            bundleID: "com.test.app", appName: "TestApp",
-            launchDate: launchDate
-        )
-        bundle.windowLister.windows = [window]
-        bundle.windowInspector.inspectionResults = [900: .inspected([
-            80: standardMeta(title: "Doc")
-        ])]
-        bundle.workspace.frontmost = nil
-
-        store.addAppRule(bundleID: "com.test.app", appName: "TestApp", rule: Rule(
-            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
-        ))
-
-        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
-        await core.start()
-
-        // Deadline = lastActive + 3600 = epoch - 20 + 3600 = epoch + 3580
-        let key = WindowKey(pid: 900, windowID: 80)
-        let schedules = core.plan.schedules.filter { $0.key == key }
-        #expect(!schedules.isEmpty)
-        if let sched = schedules.first, let deadline = sched.deadline {
-            let expected = lastActive.addingTimeInterval(3600)
-            let diff = abs(deadline.timeIntervalSince(expected))
-            #expect(diff < 1, "Restored deadline should match lastActive + closeAfter")
-        }
-    }
+    // Test 44: (removed: perf project — restart restore removed, tracked windows are in memory only)
 
     @Test("45: Rule edit through store triggers replan")
     @MainActor
