@@ -411,6 +411,7 @@ extension AppCore {
     }
 
     private func handleWorkspaceEvent(_ event: WorkspaceEvent) async {
+        Signposts.signposter.emitEvent("workspaceEvent", "\(event.signpostLabel, privacy: .public)")
         switch event {
         case let .appActivated(app):
             let previousFrontmost = trackerState.frontmostPID
@@ -448,12 +449,13 @@ extension AppCore {
     }
 
     private func handleFocusSignal(_ signal: FocusSignal) async {
+        Signposts.signposter.emitEvent("focusSignal", "\(signal.kind.signpostLabel, privacy: .public)")
         // Signals from non-frontmost pids are ignored (AltTab lesson)
         guard signal.pid == trackerState.frontmostPID else { return }
 
         switch signal.kind {
         case .focusMayHaveChanged:
-            let windowID = await ports.windowInspector.focusedWindowID(pid: signal.pid)
+            let windowID = await focusedWindowID(pid: signal.pid)
             let app = trackerState.apps[signal.pid].map {
                 ObservedApp(pid: $0.pid, bundleID: $0.bundleID, name: $0.appName, launchDate: $0.launchDate)
             }
@@ -469,9 +471,22 @@ extension AppCore {
 // MARK: - Core helpers
 
 extension AppCore {
+    private func focusedWindowID(pid: Int32) async -> UInt32? {
+        let focusID = Signposts.signposter.makeSignpostID()
+        let focusState = Signposts.signposter.beginInterval(
+            "focusedWindowID", id: focusID, "pid=\(pid, privacy: .public)"
+        )
+        let windowID = await ports.windowInspector.focusedWindowID(pid: pid)
+        Signposts.signposter.endInterval("focusedWindowID", focusState)
+        return windowID
+    }
+
     private func scan() async {
+        let scanID = Signposts.signposter.makeSignpostID()
+        let scanState = Signposts.signposter.beginInterval("scan", id: scanID)
         let windows = await ports.windowLister.listWindows()
         reduce(.windowList(windows, at: ports.scheduler.now()))
+        Signposts.signposter.endInterval("scan", scanState, "windows=\(windows.count, privacy: .public)")
     }
 
     private func inspectPid(_ pid: Int32) async {
@@ -482,7 +497,17 @@ extension AppCore {
         }
         inspectionsInProgress.insert(pid)
 
+        let inspectID = Signposts.signposter.makeSignpostID()
+        let inspectState = Signposts.signposter.beginInterval("inspect", id: inspectID, "pid=\(pid, privacy: .public)")
         let result = await ports.windowInspector.inspect(pid: pid)
+        let inspectCount: Int = switch result {
+        case let .inspected(windows): windows.count
+        case .appUnavailable: -1
+        case .notTrusted: -2
+        }
+        Signposts.signposter.endInterval(
+            "inspect", inspectState, "windows=\(inspectCount, privacy: .public)"
+        )
         reduce(.inspected(pid: pid, result, at: ports.scheduler.now()))
         lastInspectionTime[pid] = ports.scheduler.now()
 
@@ -516,7 +541,7 @@ extension AppCore {
         let frontApp = app ?? ports.workspace.frontmostApp()
         await ports.focus.observe(pid: frontApp?.pid)
         let windowID: UInt32? = if let frontApp {
-            await ports.windowInspector.focusedWindowID(pid: frontApp.pid)
+            await focusedWindowID(pid: frontApp.pid)
         } else {
             nil
         }
@@ -524,10 +549,15 @@ extension AppCore {
     }
 
     private func reduce(_ event: TrackerEvent) {
+        let reduceID = Signposts.signposter.makeSignpostID()
+        let reduceState = Signposts.signposter.beginInterval(
+            "reduce", id: reduceID, "\(event.signpostLabel, privacy: .public)"
+        )
         let outputs = TrackerReducer.reduce(&trackerState, event)
         handleOutputs(outputs)
         markTrackerDirty()
         replan()
+        Signposts.signposter.endInterval("reduce", reduceState)
     }
 
     private func handleOutputs(_ outputs: [TrackerOutput]) {
@@ -573,6 +603,10 @@ extension AppCore {
 
 extension AppCore {
     private func replan() {
+        let replanID = Signposts.signposter.makeSignpostID()
+        let replanState = Signposts.signposter.beginInterval("replan", id: replanID)
+        defer { Signposts.signposter.endInterval("replan", replanState) }
+
         let now = ports.scheduler.now()
 
         // Clear an expired pause
@@ -640,6 +674,16 @@ extension AppCore {
     }
 
     private func executeAction(_ action: PlannedAction) async {
+        let actionLabel = switch action {
+        case .closeWindow: "close"
+        case .quitApp: "quit"
+        }
+        let execID = Signposts.signposter.makeSignpostID()
+        let execState = Signposts.signposter.beginInterval(
+            "execute", id: execID, "\(actionLabel, privacy: .public)"
+        )
+        defer { Signposts.signposter.endInterval("execute", execState) }
+
         switch action {
         case let .closeWindow(key):
             inFlightCloses.insert(key)
@@ -754,11 +798,12 @@ extension AppCore {
             every: Self.scanInterval,
             tolerance: Self.scanTolerance
         ) { [weak self] in
+            Signposts.signposter.emitEvent("scanTick")
             Task {
                 await self?.scan()
                 // Reconcile focus: re-read the focused window of the frontmost app
                 guard let self, let pid = self.trackerState.frontmostPID else { return }
-                let windowID = await self.ports.windowInspector.focusedWindowID(pid: pid)
+                let windowID = await self.focusedWindowID(pid: pid)
                 if let focusedKey = self.trackerState.focusedKey,
                    focusedKey.windowID != windowID ?? 0
                 {
