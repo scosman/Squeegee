@@ -200,6 +200,19 @@ public final class Store {
         }
     }
 
+    /// Bumps the rule-version counter so that `withObservationTracking` on
+    /// `ruleSet()` fires its `onChange`. Call after any direct `@Model`
+    /// property edit on an `AppRuleRecord` (e.g., toggling `isEnabled`).
+    ///
+    /// Defensive safety net: `withObservationTracking` reliably fires for reads
+    /// of the settings singleton, but in practice the async-Task observation
+    /// context does not always pick up property changes on `AppRuleRecord`
+    /// instances. The root cause is unconfirmed. Bumping `ruleVersion` — which
+    /// is reliably tracked — ensures the observation always fires.
+    public func notifyRuleChanged() {
+        settings.ruleVersion += 1
+    }
+
     /// Explicit save for writes that must persist immediately.
     public func save() {
         do {

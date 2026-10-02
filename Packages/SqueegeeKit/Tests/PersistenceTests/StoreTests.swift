@@ -271,6 +271,43 @@ struct StoreObservationTests {
         store.settings.globalIsEnabled = true
         #expect(flag.value)
     }
+
+    @Test func observationFiresOnRefetchedRecordEdit() throws {
+        let store = try makeStore()
+        let rule = Rule(isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never)
+        let inserted = store.addAppRule(bundleID: "com.test.app", appName: "App", rule: rule)
+        store.save()
+
+        let flag = ObservationFlag()
+        withObservationTracking {
+            _ = store.ruleSet()
+        } onChange: {
+            flag.set()
+        }
+
+        // Fetch via appRule(bundleID:) AFTER withObservationTracking — the SettingsUI path
+        let refetched = store.appRule(bundleID: "com.test.app")
+        #expect(inserted === refetched, "SwiftData identity map should return same instance")
+        refetched?.isEnabled = false
+        #expect(flag.value, "Observation must fire for a separately fetched record edit")
+    }
+
+    @Test func observationFiresOnNotifyRuleChanged() throws {
+        let store = try makeStore()
+        let rule = Rule(isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never)
+        store.addAppRule(bundleID: "com.test.app", appName: "App", rule: rule)
+        store.save()
+
+        let flag = ObservationFlag()
+        withObservationTracking {
+            _ = store.ruleSet()
+        } onChange: {
+            flag.set()
+        }
+
+        store.notifyRuleChanged()
+        #expect(flag.value, "notifyRuleChanged() must trigger observation")
+    }
 }
 
 // MARK: - Migration suite

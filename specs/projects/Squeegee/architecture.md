@@ -179,7 +179,7 @@ public func save()                                      // explicit save after w
 
 **Bindings.** Settings views bind directly to `@Model` objects with `@Bindable` (for example, `Toggle("…", isOn: $rule.isEnabled)`). This is the reason SwiftData was chosen over JSON. Values that need clamping or enum mapping are exposed as computed `Binding`s by the view model (for example, `closeAfter` as a `TimeInterval` that clamps to `Rule.closeAfterRange`).
 
-**Rule changes → replan.** `AppCore` calls `store.ruleSet()` inside `withObservationTracking`. `@Model` classes are `Observable`, so any change to a rule or global setting fires `onChange`. `AppCore` then replans on the main actor and re-registers the tracking. No manual "rules changed" calls are needed from views.
+**Rule changes → replan.** `AppCore` keeps the current `RuleSet` as a stored property (in-memory cache). It loads the initial value from `store.ruleSet()` at init, and reloads it inside `observeRules()` using `withObservationTracking`. `@Model` classes are `Observable`, so any change to a rule or global setting fires `onChange`. The `onChange` handler reloads the cached `RuleSet`, re-subscribes for the next change, and then replans. `replan()` and the executor re-check in `drainExecutor()` use the cached copy — they do not call `store.ruleSet()`. As a defensive safety net, SettingsUI views also call `store.notifyRuleChanged()` via `.onChange(of:)` modifiers after each property edit — this bumps `ruleVersion` on the settings singleton, which ensures the observation fires even when direct `@Model` property mutations on `AppRuleRecord` are not reliably picked up by the async observation context.
 
 ## 5. Runtime Flow
 

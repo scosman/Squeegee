@@ -69,6 +69,7 @@ public final class AppCore {
 
     // MARK: - Internal state
 
+    private var ruleSet: RuleSet
     private var trackerState = TrackerState()
     private var scanTimer: (any Engine.Cancellable)?
     private var deadlineTimer: (any Engine.Cancellable)?
@@ -119,6 +120,7 @@ public final class AppCore {
         self.ports = ports
         self.catalog = catalog
         self.calendar = calendar
+        ruleSet = store.ruleSet()
         route = .onboarding
         permission = .denied
         plan = .empty
@@ -609,7 +611,7 @@ extension AppCore {
         }
 
         plan = Planner.plan(PlanInput(
-            ruleSet: store.ruleSet(),
+            ruleSet: ruleSet,
             state: trackerState,
             now: now,
             isPaused: isPaused,
@@ -648,7 +650,7 @@ extension AppCore {
                 let action = executorQueue.removeFirst()
                 // Re-check against a fresh plan before executing
                 let freshPlan = Planner.plan(PlanInput(
-                    ruleSet: store.ruleSet(),
+                    ruleSet: ruleSet,
                     state: trackerState,
                     now: ports.scheduler.now(),
                     isPaused: isPaused,
@@ -752,12 +754,12 @@ extension AppCore {
 
 extension AppCore {
     private func observeRules() {
-        withObservationTracking {
-            _ = store.ruleSet()
+        ruleSet = withObservationTracking {
+            store.ruleSet()
         } onChange: { [weak self] in
             Task { @MainActor in
-                self?.replan()
                 self?.observeRules()
+                self?.replan()
             }
         }
     }
