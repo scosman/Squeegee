@@ -15,8 +15,8 @@ Squeegee's CPU usage is not awful (1m24s of CPU in 18 hours, with 7+ hours of th
 - **Out of scope until measurements show they matter:** a focus-signal debounce, stopping the 60 s re-inspection of windows AX never reports, and skipping `plan` reassignment when it did not change.
 - **No changes to `Packages/SqueegeeKit/Sources/SystemBridge`** (they reset all `sb_*` manual test steps). Signposts go in AppCore, around the port calls.
 - **Schema:** dropping `TrackedWindowRecord` through a schema V2, or leaving it unused, are both fine. The app has not shipped to anyone but the author.
-- **Final test build:** fix the release config so it emits a dSYM, and profile a symbolicated release build.
-- **Final test pass criteria:** SwiftData < 5% of samples, and total CPU per 5 minutes at least 50% below a new signposted baseline run, also reported as CPU per event from the signpost counts. With the measurements in hand, discuss possible next steps.
+- **Measure with a deterministic benchmark** (`perf-bench`), not a live-app run: a live run depends on how many window changes happen, which can be zero. The live-app profiling tooling stays as an optional diagnostic.
+- **Pass criteria:** benchmark churn CPU at least 50% below the pre-fix baseline, and SwiftData < 5% of the benchmark trace samples. With the measurements in hand, discuss possible next steps.
 
 ## Context: investigation (2026-10-02)
 

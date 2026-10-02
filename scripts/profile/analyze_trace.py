@@ -4,12 +4,17 @@ analyze_trace.py — Parse an xctrace Time Profiler trace and produce a
 Markdown profiling report on stdout.
 
 Usage:
-    python3 analyze_trace.py <path-to.trace>
+    python3 analyze_trace.py [--binary NAME] <path-to.trace>
+
+Options:
+    --binary NAME   Binary name for the "top inclusive functions" section
+                    and binary share list (default: Squeegee).
 
 Requires: xcrun xctrace (ships with Xcode).
 Standard library only — no third-party packages.
 """
 
+import argparse
 import subprocess
 import sys
 import tempfile
@@ -121,11 +126,11 @@ def binary_name(frame_elem: ET.Element) -> str:
     return "unknown"
 
 
-def parse_time_profile(xml_path: str):
+def parse_time_profile(xml_path: str, app_binary: str = "Squeegee"):
     """Parse the time-profile table XML.
 
-    Returns (total_samples, total_weight_ms, binary_samples, top_self,
-    top_inclusive_squeegee, recording_length_ms).
+    Returns (total_samples, total_weight_ms, binary_samples, self_samples,
+    inclusive_app).
     """
     tree = ET.parse(xml_path)
     root = tree.getroot()
@@ -135,7 +140,7 @@ def parse_time_profile(xml_path: str):
     total_weight_ms = 0.0
     binary_samples: Counter = Counter()
     self_samples: Counter = Counter()
-    inclusive_squeegee: Counter = Counter()
+    inclusive_app: Counter = Counter()
 
     # Each <row> in the time-profile table has a weight (CPU time per sample)
     # and a backtrace (stack of <frame> elements).
@@ -169,22 +174,22 @@ def parse_time_profile(xml_path: str):
 
         # Inclusive: count each unique (binary, function) once per sample
         seen_binaries: set[str] = set()
-        seen_squeegee: set[str] = set()
+        seen_app: set[str] = set()
         for f in frames:
             bn = binary_name(f)
             if bn not in seen_binaries:
                 seen_binaries.add(bn)
                 binary_samples[bn] += 1
-            if bn == "Squeegee" and frame_label(f) not in seen_squeegee:
-                seen_squeegee.add(frame_label(f))
-                inclusive_squeegee[frame_label(f)] += 1
+            if bn == app_binary and frame_label(f) not in seen_app:
+                seen_app.add(frame_label(f))
+                inclusive_app[frame_label(f)] += 1
 
     return (
         total_samples,
         total_weight_ms,
         binary_samples,
         self_samples,
-        inclusive_squeegee,
+        inclusive_app,
     )
 
 
@@ -301,8 +306,9 @@ def parse_signposts(xml_path: str):
 
 # ── Report generation ─────────────────────────────────────────────────────────
 
-# Binaries to highlight in the share-by-binary table
-HIGHLIGHT_BINARIES = [
+# Binaries to always highlight in the share-by-binary table (the app binary
+# is appended dynamically so the list works for both Squeegee and perf-bench).
+_HIGHLIGHT_BINARIES_BASE = [
     "SwiftData",
     "CoreData",
     "libsqlite3.dylib",
@@ -311,7 +317,6 @@ HIGHLIGHT_BINARIES = [
     "SkyLight",
     "SwiftUI",
     "AttributeGraph",
-    "Squeegee",
 ]
 
 
@@ -320,10 +325,11 @@ def generate_report(
     total_weight_ms,
     binary_samples,
     self_samples,
-    inclusive_squeegee,
+    inclusive_app,
     interval_stats,
     event_counts,
     recording_length_s=None,
+    app_binary="Squeegee",
 ):
     """Generate a Markdown report and print to stdout."""
     lines = []
@@ -340,30 +346,31 @@ def generate_report(
     out()
 
     # Share by binary (inclusive)
+    highlight = _HIGHLIGHT_BINARIES_BASE + [app_binary]
     out("## Share by Binary (inclusive)")
     out()
     out("| Binary | Samples | Share |")
     out("|---|---:|---:|")
-    for bn in HIGHLIGHT_BINARIES:
+    for bn in highlight:
         count = binary_samples.get(bn, 0)
         share = (count / total_samples * 100) if total_samples > 0 else 0
         if count > 0:
             out(f"| {bn} | {count:,} | {share:.1f}% |")
     # Any other binaries with > 1% share
     for bn, count in binary_samples.most_common():
-        if bn in HIGHLIGHT_BINARIES:
+        if bn in highlight:
             continue
         share = (count / total_samples * 100) if total_samples > 0 else 0
         if share >= 1.0:
             out(f"| {bn} | {count:,} | {share:.1f}% |")
     out()
 
-    # Top 25 inclusive functions in Squeegee binary
-    out("## Top 25 Inclusive Functions (Squeegee binary)")
+    # Top 25 inclusive functions in the app binary
+    out(f"## Top 25 Inclusive Functions ({app_binary} binary)")
     out()
     out("| Function | Samples | Share |")
     out("|---|---:|---:|")
-    for func_name, count in inclusive_squeegee.most_common(25):
+    for func_name, count in inclusive_app.most_common(25):
         share = (count / total_samples * 100) if total_samples > 0 else 0
         # Truncate long function names
         display = func_name[:100] + "…" if len(func_name) > 100 else func_name
@@ -466,25 +473,15 @@ def parse_recording_length(toc_xml: str) -> float | None:
 def find_table_xpath(toc_xml: str, schema_keyword: str) -> str | None:
     """Find the xpath for a table whose schema name contains the keyword."""
     root = ET.fromstring(toc_xml)
-    for table in root.iter("table"):
-        schema = table.get("schema", "")
-        if schema_keyword in schema.lower():
-            # Build the xpath
-            run = table.find("..")
-            if run is None:
-                # table is directly under run
-                for run_elem in root.iter("run"):
-                    for t in run_elem:
-                        if t is table:
-                            run = run_elem
-                            break
-            run_number = "1"
-            if run is not None:
-                run_number = run.get("number", "1")
-            return (
-                f'/trace-toc/run[@number="{run_number}"]'
-                f'/data/table[@schema="{schema}"]'
-            )
+    for run_elem in root.iter("run"):
+        run_number = run_elem.get("number", "1")
+        for table in run_elem.iter("table"):
+            schema = table.get("schema", "")
+            if schema_keyword in schema.lower():
+                return (
+                    f'/trace-toc/run[@number="{run_number}"]'
+                    f'/data/table[@schema="{schema}"]'
+                )
     return None
 
 
@@ -492,11 +489,20 @@ def find_table_xpath(toc_xml: str, schema_keyword: str) -> str | None:
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: analyze_trace.py <path-to.trace>", file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Parse an xctrace Time Profiler trace and produce a Markdown report."
+    )
+    parser.add_argument("trace", help="Path to .trace file")
+    parser.add_argument(
+        "--binary",
+        default="Squeegee",
+        help="Binary name for the inclusive-functions section (default: Squeegee)",
+    )
+    args = parser.parse_args()
 
-    trace_path = sys.argv[1]
+    trace_path = args.trace
+    app_binary = args.binary
+
     if not Path(trace_path).exists():
         print(f"Error: trace not found at {trace_path}", file=sys.stderr)
         sys.exit(1)
@@ -514,8 +520,8 @@ def main():
 
         tp_xml_path = xctrace_export(trace_path, tp_xpath, tmp_dir)
 
-        total_samples, total_weight_ms, binary_samples, self_samples, inclusive_squeegee = (
-            parse_time_profile(tp_xml_path)
+        total_samples, total_weight_ms, binary_samples, self_samples, inclusive_app = (
+            parse_time_profile(tp_xml_path, app_binary=app_binary)
         )
 
         # Export signpost table
@@ -533,10 +539,11 @@ def main():
             total_weight_ms,
             binary_samples,
             self_samples,
-            inclusive_squeegee,
+            inclusive_app,
             interval_stats,
             event_counts,
             recording_length_s=recording_length_s,
+            app_binary=app_binary,
         )
 
 

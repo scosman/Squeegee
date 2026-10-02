@@ -113,6 +113,35 @@ After the archive step, zip `$ARCHIVE_PATH/dSYMs/Squeegee.app.dSYM` to `$BUILD_D
 
 Add a `profile_app` action (`make profile-app`, timeout 600) to `hooks_mcp.yaml`. Do not add `run.sh` (it needs the user at the Mac).
 
+### 2.7 Benchmark: `perf-bench` (primary measure, see functional spec §4)
+
+**Target.** New `.executableTarget(name: "perf-bench", dependencies: ["AppCore", "Persistence", "Engine", "TestSupport"], path: "Sources/PerfBench", swiftSettings: warningsAsErrors)` in `Kit/Package.swift`, next to `manual-tests-check`. `TestSupport` is already a regular `.target`, so no change there. If the scenario tests have a settle/wait helper that is local to the test target, move it into `TestSupport` and use it from both.
+
+**Setup per repeat** (not timed):
+- A fresh temp dir and `Store(configuration: .onDisk(tempDir))`. Global rule: enabled, 6 h, `lastActive`. App rules for 3 of the 10 bundle IDs (6 h, 8 h, 12 h; `lastActive`; quit policy `.never`).
+- Fakes from `TestSupport`: `FakeScheduler` (start date fixed, e.g. 2026-01-01 09:00 UTC), `FakeWindowLister.windows` = N windows spread round-robin over 10 apps (pids 1001–1010, bundle IDs `bench.app0`…`bench.app9`, bounds 800×600, on screen); `FakeWindowInspector.inspectionResults[pid]` = `.inspected` with standard metadata (`isStandard: true`, title `"Window <id>"`) for each of that pid's windows; `FakeAccessibilityPermission.trusted = true`; the other fakes default.
+- `AppCore(store:ports:)`, then `await core.start()` and settle. Remove the temp dir after the repeat.
+
+**Scenarios** (timed part only):
+- `churn` (N = 50): 300 switches. Switch `i` targets window index `(i * 7) % N`. Set `FakeWindowInspector.focusedWindowIDs[pid]` to the target. If the target's pid differs from the current frontmost pid, set `FakeWorkspaceEvents.frontmost` and send `.appActivated(app)`; settle. Then send two `FocusSignal(pid:, kind: .focusMayHaveChanged, at: now)` (the real focused + main window notifications); settle. Then `FakeScheduler.advance(by: dwell[i % 4])` with `dwell = [3, 8, 20, 45]` s; settle. (Dwell times above 5 s let the old persistence debounce fire, as in real use. The 60 s scan timer fires during the advances.)
+- `idle` (N = 50): `advance(by: 60)` and settle, 60 times (1 hour of scan ticks).
+- `scale`: `churn` with N = 300.
+
+**Measurement.** `getrusage(RUSAGE_SELF)` user + system time, delta around the timed part. Events = workspace events + focus signals sent + scan ticks fired (derive scan ticks from the fake time advanced ÷ 60 s). Report per scenario: median and min CPU ms over the repeats, events, µs per event (median).
+
+**CLI.** `perf-bench [--scenario churn|idle|scale|all] [--repeat N]` (defaults `all`, `5`). Prints a Markdown table to stdout. Logs nothing per event.
+
+**Make / hooks.**
+- `make bench`: `swift run -c release --package-path $(PACKAGE) perf-bench`.
+- `make bench-profile LABEL=<label>`: runs `scripts/profile/bench_profile.sh <label>`: builds `-c release`, gets the binary path with `swift build -c release --show-bin-path`, runs `perf-bench` once and saves its table to `build/profile/bench-<label>-<ts>/bench.md`, then `xcrun xctrace record --template 'Time Profiler' --launch -- <bin> --scenario churn --repeat 10 --output build/profile/bench-<label>-<ts>/trace.trace`, then `analyze_trace.py --binary perf-bench <trace> > …/report.md`, and prints both.
+- `hooks_mcp.yaml`: add a `bench` action (`make bench`, timeout 600).
+- `CLAUDE.md`: add `make bench` and `make bench-profile` to the Makefile table, and one line in the Profiling section.
+- Agents run `make bench-profile` outside the sandbox (`dangerouslyDisableSandbox: true`).
+
+**`analyze_trace.py` changes.** Add `--binary NAME` (default `Squeegee`), used for the "top inclusive functions in the app binary" section and the binary share list. Also fix two Phase 1 review nits: the stale `parse_time_profile()` docstring (it returns 5 values), and the dead `table.find("..")` fallback in `find_table_xpath()` (replace with the default `run_number = "1"`).
+
+**Checks.** The benchmark is not a test and is not in `make test` or CI. `make precommit-checks` must still pass (lint covers the new target).
+
 ## 3. Tracked windows in memory only
 
 ### 3.1 Schema V2 (`Kit/Sources/Persistence/Schema/`)

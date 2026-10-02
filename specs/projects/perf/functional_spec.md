@@ -59,29 +59,34 @@ No change to these:
 
 - The release build configuration emits a dSYM, so a profile of a release-optimized build shows function names. The release archive keeps the dSYM.
 
-### Profiling runs (agent-driven)
+### Benchmark (primary measure)
 
-The agent drives each profiling run end to end:
-1. Build a local Release-configuration app with symbols, signed with the Apple Development identity (the same identity as `make run-app`, so the Accessibility grant stays valid). No notarization.
-2. Quit the installed `/Applications/Squeegee.app`, and start the profiling build from the build folder.
-3. Record a 5-minute Time Profiler trace attached to the running app. The user uses the Mac normally during this time.
-4. Quit the profiling build, and start `/Applications/Squeegee.app` again.
+A live-app run depends on how many window changes the user makes in the 5 minutes, which can be zero. So the primary measure is a **deterministic benchmark**, `perf-bench`:
+- It drives the real `AppCore` and a real on-disk SwiftData `Store` (in a temp dir) with the existing test fakes, through scripted event sequences on a fake clock. Every run gets the same input.
+- It runs with release optimization, needs no user, and does not touch the installed app or the user's store.
+- Scenarios:
+  - **churn:** 50 windows in 10 apps; 300 app/window switches with varied dwell times; scan ticks every 60 s of fake time.
+  - **idle:** 50 windows; 1 hour of fake time with only scan ticks.
+  - **scale:** churn with 300 windows.
+- Output: process CPU time per scenario (median and min of several repeats) and µs per event.
+- A Time Profiler trace of the benchmark (launched by `xctrace`, symbolicated) gives the SwiftData share and the top paths.
+- It does not measure real AX, CG or system-notification costs. The investigation trace put those at about 1% and 0%.
+- Not a CI gate (CI runners are too noisy).
 
-There are two runs:
-- **Baseline run:** after the signposts and the dSYM are added, before any fix. It replaces the 1.3 s baseline from the overview, so both runs use the same build type and the same signposts.
-- **Final run:** after all fixes (last phase).
+There are two benchmark runs:
+- **Baseline:** on the code before any fix (Phase 2).
+- **Final:** after all fixes (last phase).
+
+### Live profiling run (diagnostic, optional)
+
+The Phase 1 tooling (`scripts/profile/run.sh`) stays as a diagnostic for the real app. The agent drives it end to end: build a symbolicated Release app (Developer ID, the same signing as the installed app, so the Accessibility grant stays valid), quit the installed app, run the profiling build on a copy of the store, record 5 minutes while the user uses the Mac, then restart the installed app. It is not a pass gate. It runs in the last phase only if the user asks for it.
 
 ### Final test (last phase)
 
-1. Do the final profiling run (above).
-2. Compare it with the baseline run.
-3. Report:
-   - Total CPU (sample count) in the 5 minutes, against the baseline run.
-   - The share of samples in SwiftData / Core Data.
-   - The top paths by share.
-   - Signpost counts per kind, and CPU per event, so runs with different activity can be compared.
-4. **Pass:** SwiftData / Core Data < 5% of samples, and total CPU at least 50% below the baseline run (compare CPU per event too, because activity differs between runs).
-5. If it passes, or if it does not, discuss the possible next steps with the user, based on the data. Candidates already known: focus-signal debounce, stopping the 60 s re-inspection of windows AX never reports, and skipping `plan` reassignment when it did not change.
+1. Run the benchmark and its trace on the final code.
+2. Compare with the baseline. Report per scenario: CPU (median, min), µs per event, and the change in %. From the trace: the SwiftData / Core Data share and the top paths.
+3. **Pass:** churn CPU (median) at least 50% below the baseline, and SwiftData / Core Data < 5% of the benchmark trace samples.
+4. If it passes, or if it does not, discuss the possible next steps with the user, based on the data. Candidates already known: focus-signal debounce, stopping the 60 s re-inspection of windows AX never reports, and skipping `plan` reassignment when it did not change. Offer the optional live run.
 
 ## 5. Out of scope
 

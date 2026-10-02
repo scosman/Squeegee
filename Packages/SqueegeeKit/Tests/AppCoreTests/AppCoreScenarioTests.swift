@@ -35,14 +35,7 @@ private func standardMeta(title: String? = nil, documentURL: URL? = nil) -> Wind
     WindowMetadata(isStandard: true, title: title, documentURL: documentURL)
 }
 
-/// Yields enough times for pending Tasks to process. The executor and event
-/// handlers spawn Tasks that need multiple run-loop turns.
-@MainActor
-private func settle(rounds: Int = 10) async {
-    for _ in 0 ..< rounds {
-        await Task.yield()
-    }
-}
+// settle() is provided by TestSupport
 
 // MARK: - Tests
 
