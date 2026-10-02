@@ -289,7 +289,7 @@ public func completeOnboarding()                     // settings.onboardingCompl
 
 ### 6.2 `AppScheduler` seam (Biscotti pattern, adapted to wall-clock deadlines)
 
-The protocol is a port: it lives in `Engine/Ports/` with the other ports (system_layer.md §1) and is carried in `AppCorePorts.scheduler`. `LiveAppScheduler` lives in `SystemBridge`, so the ManualTestApp can measure real timer latency (`sb_timer_latency`) before `AppCore` exists.
+The protocol is a port: it lives in `Engine/Ports/` with the other ports (system_layer.md §1) and is carried in `AppCorePorts.scheduler`. `LiveAppScheduler` lives in `SystemBridge`.
 
 ```swift
 public protocol AppScheduler: Sendable {

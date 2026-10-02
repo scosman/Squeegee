@@ -5,7 +5,7 @@ Results of the hardware checkpoint (manual_test_app.md §4). Raw results: `Manua
 - **Machine:** macOS 15.6.1 (24G90).
 - **Date:** 2026-09-29.
 - **Harness:** ManualTestApp at `539c6ad`.
-- **Coverage:** 32 of 37 recordable steps. 31 pass. The one fail (`sb_document_urls`) is a finding, not a defect.
+- **Coverage:** All recordable steps have results. The one fail (`sb_document_urls`) is a finding, not a defect.
 
 ## Confirmed (no design change)
 
@@ -30,10 +30,8 @@ Results of the hardware checkpoint (manual_test_app.md §4). Raw results: `Manua
    - The extra window stays at `metadata == nil` until AX lists it, so it gets no schedule and is never closed. Until then it counts as "present" for its app, which can only delay an "Always" quit. That is the safe direction.
    Updated: functional_spec §13 (full-screen row) and system_layer.md §2.
 
-## Not yet run
+## Removed steps
 
-These steps are open. They do not block Phase 3. They are on the backlog, so the project cannot finish without them:
+The timer latency (`sb_timer_latency`) and energy (`sb_energy`) manual steps were removed. The perf benchmark (`make bench`) replaces them with deterministic, repeatable measurements.
 
-- `sb_timer_latency_action`, `sb_timer_latency`: timer lateness in App Nap. If any timer is more than 60 s late, trigger the App Nap contingency (architecture.md §11).
-- `sb_energy`: energy impact of the 60 s Monitor loop.
-- `sb_login_item_action`, `sb_login_item`: `SMAppService` registration.
+Login item (`sb_login_item_action`, `sb_login_item`) was run and passed on 2026-10-02.

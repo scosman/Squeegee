@@ -92,12 +92,10 @@ Step ID prefix `sb_` (SystemBridge). **Staleness rule:** any change to `Packages
 | `sb_quit_normal` | action + humanQuestion | Terminate QuickTime Player (no windows open) through `LiveAppTerminator`. "Did it quit normally?" |
 | `sb_quit_unsaved` | humanQuestion | "Terminate TextEdit that has an unsaved document. Did it show its save prompt (not force-quit)?" |
 
-### 3.7 `sb_runtime` — Timers and energy
+### 3.7 `sb_login_item_script` — Login Item
 
 | Step | Type | Content |
 |---|---|---|
-| `sb_timer_latency` | action + humanQuestion | Arm 5 one-shot `LiveAppScheduler` timers at +2, +5, +10, +20, and +30 min, then hide the ManualTestApp (Cmd-H) and leave the Mac awake and idle. After 30 min, the tab shows the lateness of each timer. "Were all timers late by less than 60 s?" (If not: the App Nap contingency, architecture.md §11.) |
-| `sb_energy` | humanQuestion | "With the Live Inspector Monitor on and the app hidden for 10 min (use the Mac normally during this time), does Activity Monitor → Energy show 'Avg Energy Impact' near 0 and CPU near 0%?" |
 | `sb_login_item` | action + humanQuestion | `LiveLoginItem.setEnabled(true)` on the ManualTestApp. "Did it appear in System Settings → General → Login Items? Then disable it: did it go away?" |
 
 ### 3.8 `sb_scan` — Installed apps
@@ -110,4 +108,4 @@ Step ID prefix `sb_` (SystemBridge). **Staleness rule:** any change to `Packages
 
 The hardware pass is a **checkpoint** between implementation Phase 2 and Phase 3. Nothing after Phase 2 starts until it is done.
 
-The person who runs the tests records the results and notes. The notes of the decision steps (`sb_close_other_space`, `sb_close_tabs`, `sb_document_urls`, `sb_timer_latency`, `sb_focus_events`) are copied into a short `specs/projects/Squeegee/hardware_findings.md` in the same PR. If a finding changes the design (for example, the close-on-another-Space behavior, focus events, or document URLs), update engine.md / system_layer.md **before** Phase 3 starts. If a contingency is triggered (architecture.md §11), add it to the plan before Phase 3.
+The person who runs the tests records the results and notes. The notes of the decision steps (`sb_close_other_space`, `sb_close_tabs`, `sb_document_urls`, `sb_focus_events`) are copied into a short `specs/projects/Squeegee/hardware_findings.md` in the same PR. If a finding changes the design (for example, the close-on-another-Space behavior, focus events, or document URLs), update engine.md / system_layer.md **before** Phase 3 starts. If a contingency is triggered (architecture.md §11), add it to the plan before Phase 3.

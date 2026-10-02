@@ -9,7 +9,7 @@ public let allScripts: [TestScript] = [
     closeScript,
     urlsScript,
     quitScript,
-    runtimeScript,
+    loginItemScript,
     scanScript
 ]
 
@@ -246,30 +246,10 @@ private let quitScript = TestScript(
     ]
 )
 
-private let runtimeScript = TestScript(
-    id: "sb_runtime",
-    title: "Timers and Energy",
+private let loginItemScript = TestScript(
+    id: "sb_login_item_script",
+    title: "Login Item",
     steps: [
-        .action(
-            id: "sb_timer_latency_action",
-            label: "Start 5 countdown timers at +2, +5, +10, +20, and +30 minutes"
-        ) { _ in
-            // Placeholder — wired by ManualTestApp
-        },
-        .humanQuestion(
-            id: "sb_timer_latency",
-            prompt: "Hide the ManualTestApp (Cmd-H) and leave the Mac awake and idle. "
-                + "After 30 minutes, come back to this tab. It shows how late each timer "
-                + "fired. Were all timers late by less than 60 seconds?"
-        ),
-        .humanQuestion(
-            id: "sb_energy",
-            prompt: "First, go to the Live Inspector tab and set the scan interval to 60 s "
-                + "(this is the production cadence — the 1 s default is for debugging only). "
-                + "Turn the Monitor on, hide the ManualTestApp (Cmd-H), and use the Mac "
-                + "normally for 10 minutes. Then check Activity Monitor > Energy. "
-                + "Is 'Avg Energy Impact' near 0 and CPU near 0%?"
-        ),
         .action(
             id: "sb_login_item_action",
             label: "Register this app as a Login Item (opens at login)"
