@@ -21,9 +21,10 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     private var iconObservation: (any Sendable)?
     private var visibilityObservation: (any Sendable)?
 
-    // MARK: - Icon SF Symbol names (ui_design section 3.1)
+    // MARK: - Icon configuration (ui_design section 3.1)
 
-    private static let normalIcon = "macwindow.on.rectangle"
+    /// Menu bar icon height in points. macOS status bar is 22pt; 18pt leaves 2pt padding per side.
+    private static let menuBarIconSize: CGFloat = 18
     private static let pausedIcon = "pause.rectangle"
     private static let permissionMissingIcon = "exclamationmark.triangle"
 
@@ -152,16 +153,30 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     // MARK: - Icon
 
     private func updateIcon(_ state: MenuBarIconState) {
-        let symbolName: String = switch state {
-        case .normal: Self.normalIcon
-        case .paused: Self.pausedIcon
-        case .permissionMissing: Self.permissionMissingIcon
+        let image: NSImage? = switch state {
+        case .normal: Self.squeegeeImage()
+        case .paused: NSImage(systemSymbolName: Self.pausedIcon, accessibilityDescription: "Squeegee – Paused")
+        case .permissionMissing:
+            NSImage(
+                systemSymbolName: Self.permissionMissingIcon,
+                accessibilityDescription: "Squeegee – Permission Required"
+            )
         }
 
         if let button = statusItem.button {
-            let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Squeegee")
             image?.isTemplate = true
             button.image = image
         }
+    }
+
+    /// Loads the squeegee icon from the module asset catalog, sized for the menu bar.
+    private static func squeegeeImage() -> NSImage? {
+        guard let image = Bundle.module.image(forResource: "squeegee") else {
+            logger.error("Failed to load squeegee icon from asset catalog")
+            return NSImage(systemSymbolName: "macwindow.on.rectangle", accessibilityDescription: "Squeegee")
+        }
+        image.size = NSSize(width: menuBarIconSize, height: menuBarIconSize)
+        image.accessibilityDescription = "Squeegee"
+        return image
     }
 }

@@ -38,13 +38,13 @@ Visual and interaction design for the behavior in `functional_spec.md`. Section 
 
 ### 3.1 Icon
 
-A template image (monochrome, adapts to menu bar appearance). Starting SF Symbols (placeholders; the user will review and may change them):
+A template image (monochrome, adapts to menu bar appearance). The normal state uses a custom squeegee SVG from the MenuBarUI asset catalog; other states use SF Symbols:
 
-| State | SF Symbol |
+| State | Icon |
 |---|---|
-| Normal | `macwindow.on.rectangle` |
-| Paused | `pause.rectangle` |
-| Permission missing | `exclamationmark.triangle` |
+| Normal | Custom squeegee SVG (`Media.xcassets/squeegee`) |
+| Paused | SF Symbol `pause.rectangle` |
+| Permission missing | SF Symbol `exclamationmark.triangle` |
 
 ### 3.2 Menu structure
 

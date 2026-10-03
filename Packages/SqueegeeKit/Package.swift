@@ -88,6 +88,7 @@ let package = Package(
         .target(
             name: "MenuBarUI",
             dependencies: ["Presentation", "AppCore"],
+            resources: [.process("Resources")],
             swiftSettings: warningsAsErrors
         ),
         .testTarget(
