@@ -20,9 +20,7 @@ struct DoneStepView: View {
                         .fontWeight(.semibold)
                         .multilineTextAlignment(.center)
 
-                    (Text("Squeegee runs in the menu bar. Click ")
-                        + Text(Image(systemName: "macwindow.on.rectangle"))
-                        + Text(" to see what closes next, or to change settings."))
+                    Text("Squeegee runs in the menu bar. Click its icon to see what closes next, or to change settings.")
                         .font(.title3)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
