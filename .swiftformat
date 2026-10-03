@@ -1,5 +1,5 @@
 --swiftversion 6.0
---exclude .build,**/.build,App/Squeegee.xcodeproj,ManualTestApp/ManualTestApp.xcodeproj,DerivedData
+--exclude .build,**/.build,App/Squeegee.xcodeproj,ManualTestApp/ManualTestApp.xcodeproj,DerivedData,App/build,ManualTestApp/build
 # Deliberate rule choices live here; SwiftFormat is the authoritative formatter.
 --self remove
 --importgrouping testable-bottom

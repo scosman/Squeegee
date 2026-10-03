@@ -5,10 +5,10 @@ import SwiftData
 
 private let logger = Logger(subsystem: "net.scosman.squeegee", category: "Store")
 
-// Type aliases for the V2 model types used throughout the module.
-public typealias AppRuleRecord = SqueegeeSchemaV2.AppRuleRecord
-public typealias AppSettingsRecord = SqueegeeSchemaV2.AppSettingsRecord
-public typealias ClosureRecord = SqueegeeSchemaV2.ClosureRecord
+// Type aliases for the V3 model types used throughout the module.
+public typealias AppRuleRecord = SqueegeeSchemaV3.AppRuleRecord
+public typealias AppSettingsRecord = SqueegeeSchemaV3.AppSettingsRecord
+public typealias ClosureRecord = SqueegeeSchemaV3.ClosureRecord
 
 /// How the store's backing container is configured.
 public enum StoreConfiguration: Sendable {
@@ -47,7 +47,7 @@ public final class Store {
     // MARK: - Init
 
     public init(configuration: StoreConfiguration) throws {
-        let schema = Schema(versionedSchema: SqueegeeSchemaV2.self)
+        let schema = Schema(versionedSchema: SqueegeeSchemaV3.self)
         let modelConfig = switch configuration {
         case let .onDisk(url):
             ModelConfiguration(

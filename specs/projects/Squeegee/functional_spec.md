@@ -92,7 +92,7 @@ Times are wall-clock times. Time while the Mac sleeps counts. There is no specia
 | Field | Values | Default |
 |---|---|---|
 | Enabled | on / off | off (global rule); on (suggested rules) |
-| Close after | duration, 5 minutes to 30 days | 6 hours |
+| Close after | duration, 1 minute to 30 days | 6 hours |
 | Measure from | Last active / Opened | Last active |
 | Quit app when last window closed | Off / If closed by Squeegee / Always | Off |
 

@@ -9,6 +9,8 @@ excluded:
   - App/Squeegee.xcodeproj
   - ManualTestApp/ManualTestApp.xcodeproj
   - "**/DerivedData"
+  - App/build
+  - ManualTestApp/build
 
 # SwiftFormat owns formatting — disable SwiftLint's overlapping formatting rules
 # so the two tools never disagree.

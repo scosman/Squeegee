@@ -118,14 +118,16 @@ bench-profile: ## Build + profile perf-bench; requires LABEL=<name>
 run-app: generate ## Build + run the app with Apple Development signing
 	cd App && xcodebuild -quiet -project Squeegee.xcodeproj -scheme Squeegee \
 	  -destination 'platform=macOS,arch=arm64' \
-	  -configuration Debug build
-	open App/build/Debug/Squeegee.app
+	  -configuration Debug \
+	  -derivedDataPath build/DerivedData build
+	open App/build/DerivedData/Build/Products/Debug/Squeegee.app
 
 run-manual-tests: generate ## Build + run ManualTestApp with Apple Development signing
 	cd ManualTestApp && xcodebuild -quiet -project ManualTestApp.xcodeproj -scheme ManualTestApp \
 	  -destination 'platform=macOS,arch=arm64' \
-	  -configuration Debug build
-	open ManualTestApp/build/Debug/ManualTestApp.app
+	  -configuration Debug \
+	  -derivedDataPath build/DerivedData build
+	open ManualTestApp/build/DerivedData/Build/Products/Debug/ManualTestApp.app
 
 hooks: ## Enable the opt-in pre-commit hook
 	git config core.hooksPath .githooks
@@ -140,7 +142,7 @@ release: generate ## Archive, notarize, staple, and package a release DMG
 	scripts/release.sh
 
 clean: ## Remove build artifacts + generated projects
-	rm -rf .build $(PACKAGE)/.build build
+	rm -rf .build $(PACKAGE)/.build build App/build ManualTestApp/build
 	rm -rf App/Squeegee.xcodeproj ManualTestApp/ManualTestApp.xcodeproj
 	rm -rf ~/Library/Developer/Xcode/DerivedData/Squeegee-*
 	rm -rf ~/Library/Developer/Xcode/DerivedData/ManualTestApp-*

@@ -14,6 +14,7 @@ struct GeneralPage: View {
             PermissionBanner(core: core)
 
             statusSection
+            finderRestoreSection
             startupSection
             menuBarSection
             aboutSection
@@ -79,6 +80,49 @@ struct GeneralPage: View {
                     .fixedSize()
                 }
             }
+        }
+    }
+
+    // MARK: - Finder Restore
+
+    private var finderRestoreSection: some View {
+        Section {
+            HStack {
+                Toggle(isOn: Binding(
+                    get: { core.finderRestoreEnabled },
+                    set: { newValue in
+                        Task { await core.setFinderRestore(enabled: newValue) }
+                    }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reopen Finder windows to same folder")
+                        Text("Requires permission to control Finder.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .disabled(core.finderProbeInProgress)
+
+                if core.finderProbeInProgress {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            }
+
+            // Show denied status after a failed probe
+            if !core.finderRestoreEnabled, core.finderAutomationGranted == false {
+                HStack(spacing: 8) {
+                    Label("Automation permission needed", systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                    Spacer()
+                    Button("Open System Settings") {
+                        core.openAutomationSettings()
+                    }
+                }
+            }
+        } header: {
+            Text("Finder")
         }
     }
 
