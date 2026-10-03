@@ -88,12 +88,19 @@ struct GeneralPage: View {
     private var finderRestoreSection: some View {
         Section {
             HStack {
-                Toggle("Reopen Finder windows to same folder", isOn: Binding(
+                Toggle(isOn: Binding(
                     get: { core.finderRestoreEnabled },
                     set: { newValue in
                         Task { await core.setFinderRestore(enabled: newValue) }
                     }
-                ))
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reopen Finder windows to same folder")
+                        Text("Requires permission to control Finder.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 .disabled(core.finderProbeInProgress)
 
                 if core.finderProbeInProgress {
@@ -116,10 +123,6 @@ struct GeneralPage: View {
             }
         } header: {
             Text("Finder")
-        } footer: {
-            Text("Requires permission to control Finder.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
         }
     }
 
