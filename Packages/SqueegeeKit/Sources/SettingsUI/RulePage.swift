@@ -223,6 +223,7 @@ private struct CloseAfterSection: View {
     var body: some View {
         Section {
             Picker("Close after", selection: pickerSelection) {
+                Text("1 minute").tag(60)
                 Text("30 minutes").tag(1800)
                 Text("1 hour").tag(3600)
                 Text("2 hours").tag(7200)
@@ -247,15 +248,26 @@ private struct CloseAfterSection: View {
         let clamped = DurationClamping.clamp(seconds)
         let hours = clamped / 3600
         let minutes = (clamped % 3600) / 60
+        let lower = Int(Rule.closeAfterRange.lowerBound)
+        let upper = Int(Rule.closeAfterRange.upperBound)
         return HStack {
             Text("Duration")
             Spacer()
-            Stepper(
-                "\(hours)h \(minutes)m",
-                value: clampedSeconds,
-                in: Int(Rule.closeAfterRange.lowerBound) ... Int(Rule.closeAfterRange.upperBound),
-                step: 300
-            )
+            Stepper("\(hours)h \(minutes)m") {
+                // Increment: jump from 1 min to 5 min; otherwise 5-min steps.
+                if clamped < 300 {
+                    seconds = DurationClamping.clamp(300)
+                } else {
+                    seconds = DurationClamping.clamp(min(clamped + 300, upper))
+                }
+            } onDecrement: {
+                // Decrement: jump from 5 min to 1 min; otherwise 5-min steps.
+                if clamped <= 300 {
+                    seconds = DurationClamping.clamp(lower)
+                } else {
+                    seconds = DurationClamping.clamp(max(clamped - 300, 300))
+                }
+            }
             .disabled(!isEnabled)
         }
     }

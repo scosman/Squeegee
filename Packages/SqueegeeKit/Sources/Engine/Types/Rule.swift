@@ -20,8 +20,8 @@ public struct Rule: Equatable, Sendable, Codable {
     public var measureFrom: MeasureFrom
     public var quitPolicy: QuitPolicy
 
-    /// The allowed range for `closeAfter`: 5 minutes to 30 days.
-    public static let closeAfterRange: ClosedRange<TimeInterval> = 300 ... (30 * 86400)
+    /// The allowed range for `closeAfter`: 1 minute to 30 days.
+    public static let closeAfterRange: ClosedRange<TimeInterval> = 60 ... (30 * 86400)
 
     /// The default global rule: disabled, 6 hours, last active, never quit.
     public static let globalDefault = Rule(

@@ -21,17 +21,18 @@ struct DurationClampingTests {
 
     @Test("Clamp keeps in-range values unchanged")
     func clampInRange() {
+        #expect(DurationClamping.clamp(60) == 60)
         #expect(DurationClamping.clamp(300) == 300)
         #expect(DurationClamping.clamp(3600) == 3600)
         #expect(DurationClamping.clamp(21600) == 21600)
         #expect(DurationClamping.clamp(30 * 86400) == 30 * 86400)
     }
 
-    @Test("Clamp raises below-minimum to minimum (300 seconds)")
+    @Test("Clamp raises below-minimum to minimum (60 seconds)")
     func clampBelowMinimum() {
-        #expect(DurationClamping.clamp(0) == 300)
-        #expect(DurationClamping.clamp(-1) == 300)
-        #expect(DurationClamping.clamp(299) == 300)
+        #expect(DurationClamping.clamp(0) == 60)
+        #expect(DurationClamping.clamp(-1) == 60)
+        #expect(DurationClamping.clamp(59) == 60)
     }
 
     @Test("Clamp lowers above-maximum to maximum (30 days)")
@@ -43,7 +44,7 @@ struct DurationClampingTests {
 
     @Test("Preset list has the expected count and order")
     func presetListStructure() {
-        #expect(DurationClamping.presets.count == 9)
+        #expect(DurationClamping.presets.count == 10)
         // Sorted ascending
         for idx in 1 ..< DurationClamping.presets.count {
             #expect(DurationClamping.presets[idx] > DurationClamping.presets[idx - 1])

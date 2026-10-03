@@ -6,7 +6,7 @@ import Foundation
 public enum DurationClamping {
     /// The preset durations shown in the close-after picker (in seconds).
     public static let presets: [Int] = [
-        1800, 3600, 7200, 14400, 21600, 43200, 86400, 172_800, 604_800
+        60, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 172_800, 604_800
     ]
 
     /// The set form for fast membership checks.
