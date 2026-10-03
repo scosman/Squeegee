@@ -1,9 +1,9 @@
 <div align="center">
 <img width="84" height="83" alt="Squeegee icon" src="https://github.com/user-attachments/assets/b681fc93-1599-4dbb-9753-b443f0b1ba38" />
 
-### Squeegee
+### Squeegee: A MacOS app to close old windows
 
-**A MacOS app to close old windows.**
+Set rules like: auto-close Finder windows idle for 4+ hours
 
 <a href="https://github.com/scosman/Squeegee/releases/latest/download/Squeegee.dmg">
   <img width="165" height="38" alt="Download for macOS" src="https://github.com/user-attachments/assets/a0ff77ed-d9cd-49df-9ba5-b866098d8d67" />
