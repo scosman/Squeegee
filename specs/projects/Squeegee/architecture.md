@@ -103,7 +103,7 @@ public struct Rule: Equatable, Sendable, Codable {
     public var closeAfter: TimeInterval            // seconds; clamped to Rule.closeAfterRange
     public var measureFrom: MeasureFrom
     public var quitPolicy: QuitPolicy
-    public static let closeAfterRange: ClosedRange<TimeInterval> = 300...(30 * 86_400)
+    public static let closeAfterRange: ClosedRange<TimeInterval> = 60...(30 * 86_400)
     public static let globalDefault = Rule(isEnabled: false, closeAfter: 6 * 3600, measureFrom: .lastActive, quitPolicy: .never)
     public static let newAppRuleDefault = Rule(isEnabled: true, closeAfter: 6 * 3600, measureFrom: .lastActive, quitPolicy: .never)
 }

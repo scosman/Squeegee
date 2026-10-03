@@ -222,6 +222,82 @@ struct AppCoreScenarioTests {
         #expect(bundle.finderFolderResolver.resolvedTitles.isEmpty, "Resolver must not be called when restore is disabled")
     }
 
+    // MARK: - Finder restore toggle flow
+
+    @Test("35e: Enable Finder restore — probe granted → setting persisted")
+    @MainActor
+    func finderRestoreEnableGranted() async throws {
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: Date())
+        bundle.finderFolderResolver.permissionGranted = true
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        #expect(!core.finderRestoreEnabled)
+        await core.setFinderRestore(enabled: true)
+
+        #expect(core.finderRestoreEnabled, "Setting must be persisted after granted probe")
+        #expect(core.finderAutomationGranted == true)
+        #expect(!core.finderProbeInProgress)
+        #expect(bundle.finderFolderResolver.probeCount == 1)
+    }
+
+    @Test("35f: Enable Finder restore — probe denied → setting stays off")
+    @MainActor
+    func finderRestoreEnableDenied() async throws {
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: Date())
+        bundle.finderFolderResolver.permissionGranted = false
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        await core.setFinderRestore(enabled: true)
+
+        #expect(!core.finderRestoreEnabled, "Setting must not be persisted when probe is denied")
+        #expect(core.finderAutomationGranted == false)
+        #expect(!core.finderProbeInProgress)
+    }
+
+    @Test("35g: Enable Finder restore — probe inconclusive → setting stays off, no denied state")
+    @MainActor
+    func finderRestoreEnableInconclusive() async throws {
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: Date())
+        bundle.finderFolderResolver.permissionGranted = nil
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        await core.setFinderRestore(enabled: true)
+
+        #expect(!core.finderRestoreEnabled, "Setting must not be persisted when probe is inconclusive")
+        #expect(core.finderAutomationGranted == nil, "Inconclusive probe must not show denied state")
+        #expect(!core.finderProbeInProgress)
+    }
+
+    @Test("35h: Disable Finder restore → setting off, automation state cleared")
+    @MainActor
+    func finderRestoreDisable() async throws {
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: Date())
+        bundle.finderFolderResolver.permissionGranted = true
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        // Enable first
+        await core.setFinderRestore(enabled: true)
+        #expect(core.finderRestoreEnabled)
+        #expect(core.finderAutomationGranted == true)
+
+        // Now disable
+        await core.setFinderRestore(enabled: false)
+        #expect(!core.finderRestoreEnabled)
+        #expect(core.finderAutomationGranted == nil, "Automation state must reset on disable")
+    }
+
     @Test("36: Save dialog keeps window, focus resets deadline")
     @MainActor
     func saveDialogKeepsWindow() async throws {

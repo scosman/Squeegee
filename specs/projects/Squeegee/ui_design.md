@@ -170,7 +170,7 @@ Screenshots                   waiting — in use
 
 - **Header:** app icon (48 pt) and app name. For the global rule: `square.stack` symbol, "All other apps", and the subtitle "Applies to every app that doesn't have its own rule."
 - **Close windows automatically:** a toggle. When off, the sections below it are disabled (dimmed), and the Open Windows times show "Won't close".
-- **Close after:** a pop-up menu: 30 minutes, 1 hour, 2 hours, 4 hours, 6 hours, 12 hours, 1 day, 2 days, 1 week, divider, Custom…. When Custom is selected, a row shows below it with **hours** and **minutes** fields plus steppers. The range is limited to 5 minutes – 30 days, and the value is clamped when the field loses focus. If a saved value is not a preset, the pop-up shows "Custom" and the custom row is visible.
+- **Close after:** a pop-up menu: 1 minute, 30 minutes, 1 hour, 2 hours, 4 hours, 6 hours, 12 hours, 1 day, 2 days, 1 week, divider, Custom…. When Custom is selected, a row shows below it with **hours** and **minutes** fields plus steppers. The range is limited to 1 minute – 30 days, and the value is clamped when the field loses focus. If a saved value is not a preset, the pop-up shows "Custom" and the custom row is visible.
 - **Measure from:** a pop-up menu with **Last active** and **Opened**. Each option has an `NSMenuItem.subtitle` in the dropdown:
   - Last active: "Time since you last used the window (focused for 5 seconds or more)."
   - Opened: "Time since the window opened, or since Squeegee first saw it."

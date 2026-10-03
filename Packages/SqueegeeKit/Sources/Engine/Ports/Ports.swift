@@ -80,9 +80,10 @@ public protocol FinderFolderResolving: Sendable {
     /// given title, or nil if the window cannot be matched unambiguously.
     func folderURL(windowTitle: String) async -> URL?
 
-    /// Sends a trivial Apple Event to Finder to test (and trigger) the
-    /// Automation permission prompt. Returns true if permission is granted.
-    func probePermission() async -> Bool
+    /// Checks (and optionally triggers) the Automation permission prompt.
+    /// Returns `true` if granted, `false` if denied, or `nil` if the
+    /// result is inconclusive (e.g. Finder is not running).
+    func probePermission() async -> Bool?
 
     /// Opens System Settings at Privacy & Security > Automation.
     func openAutomationSettings()

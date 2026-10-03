@@ -239,24 +239,35 @@ public final class AppCore {
         store.settings.finderRestoreEnabled ?? false
     }
 
-    /// Automation permission state for Finder. Updated by `probeFinderPermission()`.
+    /// Automation permission state for Finder.
+    /// `true` = granted, `false` = denied, `nil` = unknown/not probed.
     public private(set) var finderAutomationGranted: Bool?
 
-    /// Enables or disables Finder window restore. When enabling, probes the
-    /// Automation permission (which triggers the macOS prompt if not yet asked).
-    public func setFinderRestore(enabled: Bool) async {
-        store.settings.finderRestoreEnabled = enabled
-        store.save()
-        if enabled {
-            finderAutomationGranted = await ports.finderFolderResolver.probePermission()
-        }
-    }
+    /// True while the Automation permission probe is in progress.
+    public private(set) var finderProbeInProgress = false
 
-    /// Re-checks Automation permission for Finder. Call when the app becomes
-    /// active, in case the user toggled it in System Settings.
-    public func probeFinderPermission() async {
-        guard store.settings.finderRestoreEnabled == true else { return }
-        finderAutomationGranted = await ports.finderFolderResolver.probePermission()
+    /// Enables or disables Finder window restore. When enabling, probes the
+    /// Automation permission first — `finderRestoreEnabled` is only persisted
+    /// as true if the probe succeeds. If the probe returns false (denied),
+    /// the setting stays off and `finderAutomationGranted` is set to false
+    /// so the UI can show the denied state. If the probe returns nil
+    /// (inconclusive, e.g. Finder not running), the setting stays off
+    /// and `finderAutomationGranted` remains nil (no denied row shown).
+    public func setFinderRestore(enabled: Bool) async {
+        if enabled {
+            finderProbeInProgress = true
+            let result = await ports.finderFolderResolver.probePermission()
+            finderProbeInProgress = false
+            finderAutomationGranted = result
+            if result == true {
+                store.settings.finderRestoreEnabled = true
+                store.save()
+            }
+        } else {
+            store.settings.finderRestoreEnabled = false
+            store.save()
+            finderAutomationGranted = nil
+        }
     }
 
     /// Opens System Settings at Privacy & Security > Automation.

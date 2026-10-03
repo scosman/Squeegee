@@ -253,7 +253,7 @@ private struct CloseAfterSection: View {
         return HStack {
             Text("Duration")
             Spacer()
-            Stepper("\(hours)h \(minutes)m") {
+            Stepper(hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m") {
                 // Increment: jump from 1 min to 5 min; otherwise 5-min steps.
                 if clamped < 300 {
                     seconds = DurationClamping.clamp(300)

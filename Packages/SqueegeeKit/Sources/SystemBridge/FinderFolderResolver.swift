@@ -1,4 +1,5 @@
 import AppKit
+import CoreServices
 import Engine
 import Foundation
 import os
@@ -72,16 +73,33 @@ public struct LiveFinderFolderResolver: FinderFolderResolving, Sendable {
         }
     }
 
-    public func probePermission() async -> Bool {
-        let source = """
-        with timeout of \(Self.scriptTimeoutSeconds) seconds
-            tell application "Finder" to get name
-        end timeout
-        """
-        let result = await executeAppleScript(source)
-        let granted = result != nil
-        Self.logger.info("Automation permission probe: \(granted ? "granted" : "denied", privacy: .public)")
-        return granted
+    public func probePermission() async -> Bool? {
+        // Uses AEDeterminePermissionToAutomateTarget — the Apple-sanctioned
+        // API for checking and requesting Automation TCC permission. With
+        // askUserIfNeeded=true it triggers the system prompt on first use.
+        // Must run on the main thread for the prompt to appear.
+        await MainActor.run {
+            let target = NSAppleEventDescriptor(bundleIdentifier: "com.apple.finder")
+            guard let aeDesc = target.aeDesc else {
+                Self.logger.warning("Failed to create AE target descriptor for Finder")
+                return nil
+            }
+            let status = AEDeterminePermissionToAutomateTarget(
+                aeDesc, typeWildCard, typeWildCard, true
+            )
+            if status == noErr {
+                Self.logger.info("Automation permission probe: granted")
+                return true
+            } else if status == procNotFound {
+                Self.logger.info("Automation permission probe: Finder not running (procNotFound)")
+                return nil
+            } else {
+                Self.logger.info(
+                    "Automation permission probe: denied (status=\(status, privacy: .public))"
+                )
+                return false
+            }
+        }
     }
 
     // MARK: - Helpers

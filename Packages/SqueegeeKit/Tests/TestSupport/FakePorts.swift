@@ -288,7 +288,8 @@ public final class FakeFinderFolderResolver: FinderFolderResolving, @unchecked S
     public var folderURLsByTitle: [String: URL] = [:]
     public private(set) var resolvedTitles: [String] = []
     /// Controls what `probePermission()` returns.
-    public var permissionGranted = true
+    /// `true` = granted, `false` = denied, `nil` = inconclusive.
+    public var permissionGranted: Bool? = true
     public private(set) var probeCount = 0
     public private(set) var automationSettingsOpened = false
 
@@ -301,7 +302,7 @@ public final class FakeFinderFolderResolver: FinderFolderResolving, @unchecked S
         }
     }
 
-    public nonisolated func probePermission() async -> Bool {
+    public nonisolated func probePermission() async -> Bool? {
         await MainActor.run {
             probeCount += 1
             return permissionGranted
