@@ -17,6 +17,7 @@ public enum LivePorts {
             loginItem: LiveLoginItem(),
             installedApps: LiveInstalledAppScanner(),
             opener: LiveAppOpener(),
+            finderFolderResolver: LiveFinderFolderResolver(),
             scheduler: LiveAppScheduler()
         )
     }

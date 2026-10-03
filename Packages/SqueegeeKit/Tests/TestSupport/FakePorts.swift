@@ -280,6 +280,39 @@ public final class FakeAppOpener: AppOpening, @unchecked Sendable {
     }
 }
 
+// MARK: - FakeFinderFolderResolver
+
+@MainActor
+public final class FakeFinderFolderResolver: FinderFolderResolving, @unchecked Sendable {
+    /// Scripted folder URLs by window title.
+    public var folderURLsByTitle: [String: URL] = [:]
+    public private(set) var resolvedTitles: [String] = []
+    /// Controls what `probePermission()` returns.
+    public var permissionGranted = true
+    public private(set) var probeCount = 0
+    public private(set) var automationSettingsOpened = false
+
+    public init() {}
+
+    public nonisolated func folderURL(windowTitle: String) async -> URL? {
+        await MainActor.run {
+            resolvedTitles.append(windowTitle)
+            return folderURLsByTitle[windowTitle]
+        }
+    }
+
+    public nonisolated func probePermission() async -> Bool {
+        await MainActor.run {
+            probeCount += 1
+            return permissionGranted
+        }
+    }
+
+    public nonisolated func openAutomationSettings() {
+        MainActor.assumeIsolated { automationSettingsOpened = true }
+    }
+}
+
 // MARK: - FakePorts builder
 
 /// Bundles all fakes into an `AppCorePorts` for test setup.
@@ -295,6 +328,7 @@ public struct FakePortsBundle {
     public let loginItem: FakeLoginItem
     public let installedApps: FakeInstalledAppScanner
     public let opener: FakeAppOpener
+    public let finderFolderResolver: FakeFinderFolderResolver
     public let scheduler: FakeScheduler
 
     public init(now: Date) {
@@ -308,6 +342,7 @@ public struct FakePortsBundle {
         loginItem = FakeLoginItem()
         installedApps = FakeInstalledAppScanner()
         opener = FakeAppOpener()
+        finderFolderResolver = FakeFinderFolderResolver()
         scheduler = FakeScheduler(now: now)
     }
 
@@ -323,6 +358,7 @@ public struct FakePortsBundle {
             loginItem: loginItem,
             installedApps: installedApps,
             opener: opener,
+            finderFolderResolver: finderFolderResolver,
             scheduler: scheduler
         )
     }

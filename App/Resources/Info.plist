@@ -25,6 +25,8 @@
     <string>icon</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Squeegee needs this permission to detect which folder a Finder window shows, so it can reopen the window to the same location.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
 </dict>

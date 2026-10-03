@@ -232,6 +232,38 @@ public final class AppCore {
         ports.permission.openSystemSettings()
     }
 
+    // MARK: - Finder restore
+
+    /// Whether Finder window restore is enabled by the user.
+    public var finderRestoreEnabled: Bool {
+        store.settings.finderRestoreEnabled ?? false
+    }
+
+    /// Automation permission state for Finder. Updated by `probeFinderPermission()`.
+    public private(set) var finderAutomationGranted: Bool?
+
+    /// Enables or disables Finder window restore. When enabling, probes the
+    /// Automation permission (which triggers the macOS prompt if not yet asked).
+    public func setFinderRestore(enabled: Bool) async {
+        store.settings.finderRestoreEnabled = enabled
+        store.save()
+        if enabled {
+            finderAutomationGranted = await ports.finderFolderResolver.probePermission()
+        }
+    }
+
+    /// Re-checks Automation permission for Finder. Call when the app becomes
+    /// active, in case the user toggled it in System Settings.
+    public func probeFinderPermission() async {
+        guard store.settings.finderRestoreEnabled == true else { return }
+        finderAutomationGranted = await ports.finderFolderResolver.probePermission()
+    }
+
+    /// Opens System Settings at Privacy & Security > Automation.
+    public func openAutomationSettings() {
+        ports.finderFolderResolver.openAutomationSettings()
+    }
+
     // MARK: - Login item
 
     public var launchAtLogin: Bool {
@@ -679,12 +711,18 @@ extension AppCore {
         switch action {
         case let .closeWindow(key):
             inFlightCloses.insert(key)
+
+            // Finder special case: resolve the folder URL before closing,
+            // because AXDocument is not populated for Finder windows.
+            let finderFolderURL = await resolveFinderFolderURL(for: key)
+
             let result = await ports.windowCloser.close(key)
             let now = ports.scheduler.now()
 
             switch result {
             case let .pressed(latest, wasListed):
-                reduce(.closeSent(key, wasListed: wasListed, latest: latest, at: now))
+                let enriched = enrichMetadata(latest, finderFolderURL: finderFolderURL)
+                reduce(.closeSent(key, wasListed: wasListed, latest: enriched, at: now))
                 // Schedule verification scans at +2s and +10s
                 scheduleVerificationScans(key: key, at: now)
 
@@ -747,6 +785,37 @@ extension AppCore {
             }
         }
         verificationTimers.append(timer10)
+    }
+}
+
+// MARK: - Finder folder resolution
+
+extension AppCore {
+    private static let finderBundleID = "com.apple.finder"
+
+    /// Queries the Finder folder URL for a window about to be closed.
+    /// Returns nil for non-Finder windows, when the feature is off,
+    /// or when the title cannot be resolved.
+    private func resolveFinderFolderURL(for key: WindowKey) async -> URL? {
+        guard store.settings.finderRestoreEnabled == true,
+              let tracked = trackerState.windows[key],
+              tracked.bundleID == Self.finderBundleID,
+              tracked.metadata?.documentURL == nil,
+              let title = tracked.metadata?.title
+        else { return nil }
+        return await ports.finderFolderResolver.folderURL(windowTitle: title)
+    }
+
+    /// Returns metadata with the Finder folder URL set, if one was resolved.
+    private func enrichMetadata(
+        _ metadata: WindowMetadata?,
+        finderFolderURL: URL?
+    ) -> WindowMetadata? {
+        guard let finderFolderURL, var enriched = metadata, enriched.documentURL == nil else {
+            return metadata
+        }
+        enriched.documentURL = finderFolderURL
+        return enriched
     }
 }
 

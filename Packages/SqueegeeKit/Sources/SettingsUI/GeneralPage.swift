@@ -14,6 +14,7 @@ struct GeneralPage: View {
             PermissionBanner(core: core)
 
             statusSection
+            finderRestoreSection
             startupSection
             menuBarSection
             aboutSection
@@ -79,6 +80,38 @@ struct GeneralPage: View {
                     .fixedSize()
                 }
             }
+        }
+    }
+
+    // MARK: - Finder Restore
+
+    private var finderRestoreSection: some View {
+        Section {
+            Toggle("Reopen Finder windows to same folder", isOn: Binding(
+                get: { core.finderRestoreEnabled },
+                set: { newValue in
+                    Task { await core.setFinderRestore(enabled: newValue) }
+                }
+            ))
+
+            // Show denied status when enabled but permission not granted
+            if core.finderRestoreEnabled, core.finderAutomationGranted == false {
+                HStack(spacing: 8) {
+                    Label("Automation permission needed", systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                    Spacer()
+                    Button("Open System Settings") {
+                        core.openAutomationSettings()
+                    }
+                }
+            }
+        } header: {
+            Text("Finder")
+        } footer: {
+            Text("Requires permission to control Finder. Squeegee records the folder path when it closes a Finder window and can reopen it to the same location.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
     }
 

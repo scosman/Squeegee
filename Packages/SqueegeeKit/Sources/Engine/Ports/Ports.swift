@@ -72,6 +72,22 @@ public protocol AppOpening: Sendable {
     func fileExists(_ url: URL) -> Bool
 }
 
+/// Resolves the folder URL shown in a Finder window, given the window title.
+/// Only called at close time (not during polling) to keep overhead low.
+/// The live implementation requires Automation TCC permission for Finder.
+public protocol FinderFolderResolving: Sendable {
+    /// Returns the file URL of the folder shown in a Finder window with the
+    /// given title, or nil if the window cannot be matched unambiguously.
+    func folderURL(windowTitle: String) async -> URL?
+
+    /// Sends a trivial Apple Event to Finder to test (and trigger) the
+    /// Automation permission prompt. Returns true if permission is granted.
+    func probePermission() async -> Bool
+
+    /// Opens System Settings at Privacy & Security > Automation.
+    func openAutomationSettings()
+}
+
 // MARK: - Scheduling
 
 /// An abstraction for the system clock and timers, enabling deterministic tests.
@@ -112,6 +128,7 @@ public struct AppCorePorts: Sendable {
     public var loginItem: any LoginItemPort
     public var installedApps: any InstalledAppScanning
     public var opener: any AppOpening
+    public var finderFolderResolver: any FinderFolderResolving
     public var scheduler: any AppScheduler
 
     public init(
@@ -125,6 +142,7 @@ public struct AppCorePorts: Sendable {
         loginItem: any LoginItemPort,
         installedApps: any InstalledAppScanning,
         opener: any AppOpening,
+        finderFolderResolver: any FinderFolderResolving,
         scheduler: any AppScheduler
     ) {
         self.windowLister = windowLister
@@ -137,6 +155,7 @@ public struct AppCorePorts: Sendable {
         self.loginItem = loginItem
         self.installedApps = installedApps
         self.opener = opener
+        self.finderFolderResolver = finderFolderResolver
         self.scheduler = scheduler
     }
 }

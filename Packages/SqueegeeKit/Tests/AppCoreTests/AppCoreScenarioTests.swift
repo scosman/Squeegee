@@ -43,12 +43,16 @@ private func standardMeta(title: String? = nil, documentURL: URL? = nil) -> Wind
 
 @Suite("AppCore Scenarios")
 struct AppCoreScenarioTests {
-    @Test("35: Finder window close → history record with title, no URL")
+    @Test("35: Finder window close → resolver provides folder URL")
     @MainActor
     func finderWindowCloseAndHistory() async throws {
         let epoch = Date(timeIntervalSinceReferenceDate: 0)
         let store = try makeStore()
         let bundle = FakePortsBundle(now: epoch)
+
+        let documentsURL = URL(fileURLWithPath: "/Users/test/Documents", isDirectory: true)
+        bundle.finderFolderResolver.folderURLsByTitle = ["Documents": documentsURL]
+        store.settings.finderRestoreEnabled = true
 
         store.addAppRule(bundleID: "com.apple.finder", appName: "Finder", rule: Rule(
             isEnabled: true, closeAfter: 6 * 3600, measureFrom: .lastActive, quitPolicy: .never
@@ -85,9 +89,137 @@ struct AppCoreScenarioTests {
         if let first = closures.first {
             #expect(first.bundleID == "com.apple.finder")
             #expect(first.windowTitle == "Documents")
-            #expect(first.documentURL == nil, "Finder exposes no document URL")
+            #expect(first.documentURL == documentsURL, "Finder folder URL should be resolved")
             #expect(first.kind == .windowClosed)
         }
+        #expect(bundle.finderFolderResolver.resolvedTitles == ["Documents"])
+    }
+
+    @Test("35b: Finder close with unresolvable title → nil URL, no crash")
+    @MainActor
+    func finderWindowCloseUnresolvable() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+        // No folder URLs configured → resolver returns nil
+        store.settings.finderRestoreEnabled = true
+
+        store.addAppRule(bundleID: "com.apple.finder", appName: "Finder", rule: Rule(
+            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
+        ))
+
+        let finderWindow = observedWindow(pid: 200, windowID: 5, bundleID: "com.apple.finder", appName: "Finder")
+        bundle.windowLister.windows = [finderWindow]
+        bundle.windowInspector.inspectionResults = [200: .inspected([
+            5: standardMeta(title: "Recents")
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let key = WindowKey(pid: 200, windowID: 5)
+        bundle.windowCloser.closeResults = [key: .pressed(
+            latest: standardMeta(title: "Recents"),
+            wasListed: true
+        )]
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        bundle.scheduler.advance(by: 3600)
+        await settle()
+
+        bundle.windowLister.windows = []
+        bundle.scheduler.advance(by: 3)
+        await settle()
+
+        let closures = store.recentClosures(limit: 10)
+        #expect(!closures.isEmpty)
+        if let first = closures.first {
+            #expect(first.documentURL == nil, "Unresolvable Finder window keeps nil URL")
+        }
+        #expect(bundle.finderFolderResolver.resolvedTitles == ["Recents"])
+    }
+
+    @Test("35c: Non-Finder app close → resolver not called")
+    @MainActor
+    func nonFinderCloseSkipsResolver() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+
+        store.addAppRule(bundleID: "com.test.editor", appName: "Editor", rule: Rule(
+            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
+        ))
+
+        let editorWindow = observedWindow(pid: 300, windowID: 10, bundleID: "com.test.editor", appName: "Editor")
+        bundle.windowLister.windows = [editorWindow]
+        bundle.windowInspector.inspectionResults = [300: .inspected([
+            10: standardMeta(title: "readme.md", documentURL: URL(fileURLWithPath: "/tmp/readme.md"))
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let key = WindowKey(pid: 300, windowID: 10)
+        bundle.windowCloser.closeResults = [key: .pressed(
+            latest: standardMeta(title: "readme.md", documentURL: URL(fileURLWithPath: "/tmp/readme.md")),
+            wasListed: true
+        )]
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        bundle.scheduler.advance(by: 3600)
+        await settle()
+
+        bundle.windowLister.windows = []
+        bundle.scheduler.advance(by: 3)
+        await settle()
+
+        #expect(bundle.finderFolderResolver.resolvedTitles.isEmpty, "Resolver must not be called for non-Finder apps")
+    }
+
+    @Test("35d: Finder close with restore disabled → resolver not called")
+    @MainActor
+    func finderCloseWithRestoreDisabled() async throws {
+        let epoch = Date(timeIntervalSinceReferenceDate: 0)
+        let store = try makeStore()
+        let bundle = FakePortsBundle(now: epoch)
+        // finderRestoreEnabled defaults to false — do not enable it
+
+        let documentsURL = URL(fileURLWithPath: "/Users/test/Documents", isDirectory: true)
+        bundle.finderFolderResolver.folderURLsByTitle = ["Documents": documentsURL]
+
+        store.addAppRule(bundleID: "com.apple.finder", appName: "Finder", rule: Rule(
+            isEnabled: true, closeAfter: 3600, measureFrom: .lastActive, quitPolicy: .never
+        ))
+
+        let finderWindow = observedWindow(pid: 400, windowID: 20, bundleID: "com.apple.finder", appName: "Finder")
+        bundle.windowLister.windows = [finderWindow]
+        bundle.windowInspector.inspectionResults = [400: .inspected([
+            20: standardMeta(title: "Documents")
+        ])]
+        bundle.workspace.frontmost = nil
+
+        let key = WindowKey(pid: 400, windowID: 20)
+        bundle.windowCloser.closeResults = [key: .pressed(
+            latest: standardMeta(title: "Documents"),
+            wasListed: true
+        )]
+
+        let core = AppCore(store: store, ports: bundle.ports, catalog: .builtIn)
+        await core.start()
+
+        bundle.scheduler.advance(by: 3600)
+        await settle()
+
+        bundle.windowLister.windows = []
+        bundle.scheduler.advance(by: 3)
+        await settle()
+
+        let closures = store.recentClosures(limit: 10)
+        #expect(!closures.isEmpty)
+        if let first = closures.first {
+            #expect(first.documentURL == nil, "Finder folder URL must not be resolved when restore is disabled")
+        }
+        #expect(bundle.finderFolderResolver.resolvedTitles.isEmpty, "Resolver must not be called when restore is disabled")
     }
 
     @Test("36: Save dialog keeps window, focus resets deadline")
