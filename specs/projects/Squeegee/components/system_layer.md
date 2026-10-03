@@ -287,7 +287,7 @@ This is not a documented notification. It is verified by the ManualTestApp (`sb_
 | AX inspect (one app) | on app deactivate, window created, Space change, new unknown windows | about 1–10 ms per app |
 | Deadline timer | once per deadline | negligible |
 
-While the displays sleep, only the deadline timer and a close's verification scans run. The target is idle CPU of about 0.0% and "Low" energy impact in Activity Monitor. The ManualTestApp `sb_energy` step checks this.
+While the displays sleep, only the deadline timer and a close's verification scans run. The target is idle CPU of about 0.0% and "Low" energy impact in Activity Monitor. The perf benchmark (`make bench`) verifies this.
 
 ## 9. Unit tests (SystemBridge)
 

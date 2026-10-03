@@ -1,6 +1,6 @@
 # Backlog
 
-- [ ] **Finish the hardware checkpoint.** Run `sb_timer_latency_action` + `sb_timer_latency` (30 min, app hidden), `sb_energy` (10 min, 60 s interval), and `sb_login_item_action` + `sb_login_item` in the ManualTestApp, and add the results to hardware_findings.md. If any timer is more than 60 s late, build the App Nap contingency (architecture.md §11) and re-check it in the ManualTestApp.
+- [x] **Finish the hardware checkpoint.** Timer latency and energy steps removed (replaced by the perf benchmark). Login item steps (`sb_login_item_action`, `sb_login_item`) run and passed.
 - [x] **Sidebar collapse button removed from Settings.** Fixed by disabling SwiftUI toolbar bridging (`sceneBridgingOptions = []`) and installing an AppKit-owned empty `NSToolbar` with `.unified` style for the visual.
 - [ ] **~2 s frozen outline / slow render on Cmd-Tab to the Settings window.** Root cause not found. Not proven to be the `.accessory`→`.regular` policy switch. Needs evidence (`sample` during activation, DEBUG `SelfCheck` timing logs).
 - [ ] **Menu bar menu stuck on "Finder – closing…" indefinitely** after Finder windows closed on time; Settings Open Windows correctly shows none. Root cause not found; only a safety net (`resolveStaleCloses`) and retained verification timers were added. Scenario test 49 passes, so the fault is in the live path. Needs the live `[selfcheck]`/log evidence.

@@ -33,8 +33,6 @@ enum WiredScripts {
             wireReopen(step)
         case let .action(id, _, _) where id == "sb_quit_normal_action":
             wireQuitNormal(step)
-        case let .action(id, _, _) where id == "sb_timer_latency_action":
-            wireTimerLatency(step)
         case let .action(id, _, _) where id == "sb_login_item_action":
             wireLoginItem(step)
         case let .autoCheck(id, _, _) where id == "sb_installed_apps_check":
@@ -154,28 +152,7 @@ enum WiredScripts {
         }
     }
 
-    // MARK: - Runtime wiring
-
-    private static func wireTimerLatency(_ step: TestStep) -> TestStep {
-        guard case let .action(id, label, _) = step else { return step }
-        return .action(id: id, label: label) { status in
-            let scheduler = LiveAppScheduler()
-            let intervals: [TimeInterval] = [2 * 60, 5 * 60, 10 * 60, 20 * 60, 30 * 60]
-            let start = Date()
-
-            for interval in intervals {
-                let expected = start.addingTimeInterval(interval)
-                _ = await MainActor.run {
-                    scheduler.schedule(at: expected, tolerance: 1) {
-                        let lateness = Date().timeIntervalSince(expected)
-                        let mins = Int(interval / 60)
-                        status("Timer +\(mins)m fired, lateness: \(String(format: "%.1f", lateness))s")
-                    }
-                }
-            }
-            status("5 timers armed at +2, +5, +10, +20, +30 min from now (\(start))")
-        }
-    }
+    // MARK: - Login Item wiring
 
     private static func wireLoginItem(_ step: TestStep) -> TestStep {
         guard case let .action(id, label, _) = step else { return step }

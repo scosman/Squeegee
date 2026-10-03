@@ -59,5 +59,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install dev tools
         run: brew install xcodegen
+      # Xcode 26's .icon renderer (AssetCatalogAgent) loads CoreMedia/MediaToolbox
+      # frameworks that are ABI-incompatible with the macOS 15 host, crashing the
+      # build. Removing the icon is safe: this job validates code compilation, not
+      # the final app icon. Local and release builds keep the real icon.
+      - name: Strip .icon asset (crashes AssetCatalogAgent on macOS 15)
+        run: rm -rf App/Resources/icon.icon
       - name: Generate + build app
         run: make build-app

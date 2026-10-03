@@ -351,7 +351,7 @@ The scripts cover every hardware unknown from functional spec §15 and every des
 |---|---|---|
 | `_AXUIElementGetWindow` missing on a future macOS | Resolved with `dlsym` at startup; the ManualTestApp checks it | If missing: `AXWindowService` matches windows by AX position+size against CG bounds (system_layer.md §3.3). Closing still works; accuracy drops. |
 | Kept AX element cannot close a window on another Space | ManualTestApp `sb_close_other_space` | Close waits until the user visits the Space (already the V1 behavior when the element is missing). Option B from design review (`_AXUIElementCreateWithRemoteToken`) is a later project. |
-| App Nap delays the deadline timer by more than 60 s | ManualTestApp `sb_timer_latency` | Hold `ProcessInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason:)` only from 60 s before a deadline until it fires. |
+| App Nap delays the deadline timer by more than 60 s | Perf benchmark (`make bench`) | Hold `ProcessInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason:)` only from 60 s before a deadline until it fires. |
 | Some apps do not send `kAXFocusedWindowChanged` | ManualTestApp `sb_focus_events` (Finder, Preview, Safari, an Electron app) | Also subscribe to `kAXMainWindowChanged` (already in V1). The 60 s scan re-reads the focused window. |
 | `com.apple.accessibility.api` notification does not fire | ManualTestApp `sb_permission_notification` | Re-check on app activation (V1), plus a 2 s poll only while the onboarding permission screen is visible. |
 | Finder does not expose a document URL | ManualTestApp `sb_document_urls` | **Triggered** (hardware_findings.md). No Reopen for Finder; "open the app" action (ui_design §3.2 fallback row). |

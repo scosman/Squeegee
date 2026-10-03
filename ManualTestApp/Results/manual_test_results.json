@@ -121,6 +121,16 @@
     "stepID" : "sb_installed_apps_check",
     "timestamp" : "2026-09-30T02:37:33Z"
   },
+  "sb_login_item" : {
+    "status" : "pass",
+    "stepID" : "sb_login_item",
+    "timestamp" : "2026-10-02T21:27:49Z"
+  },
+  "sb_login_item_action" : {
+    "status" : "pass",
+    "stepID" : "sb_login_item_action",
+    "timestamp" : "2026-10-02T21:27:23Z"
+  },
   "sb_permission_notification" : {
     "status" : "pass",
     "stepID" : "sb_permission_notification",
