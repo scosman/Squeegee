@@ -31,8 +31,8 @@
 - **Reopen History** -- Recent closures appear in the menu bar with one-click reopen.
 - **Suggestions** -- A built-in catalog proposes rules for common apps (Finder, Preview, QuickTime, messaging apps, and more).
 - **Pause** -- Pause all closures from the menu bar: for an hour, until tomorrow, or until you resume.
-- **Menu bar icon** -- See upcoming and recent closures at a glance. The icon can be hidden in Settings.
-- **Safe by default** -- Squeegee sends a normal close (the same as clicking the red button), never force-quits anything. Doesn't override "Do you want to save?"
+- **Menu bar app** -- See upcoming and recent closures at a glance. The icon can be hidden in Settings.
+- **Safe by default** -- Squeegee sends a normal close (the same as clicking the red button), never force-quits anything. Never overrides "Do you want to save?"
 - **Local and private** -- No network access, no accounts, no telemetry. Data never leave your Mac.
 
 ## How It Works
@@ -41,7 +41,7 @@
 2. **Squeegee watches** -- It tracks each window's last-active time (or opened time) in the background.
 3. **Stale windows close automatically** -- When a window passes its deadline, Squeegee closes it, just like clicking the red close button.
 
-Rules apply per app, not per window. You set them once and Squeegee handles the rest.
+Rules are setup per app, and applied per window.
 
 ## Accessibility Permission
 
