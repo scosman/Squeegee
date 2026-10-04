@@ -19,7 +19,7 @@ Set rules like: auto-close Finder windows idle for 4+ hours
 </div>
 
 <div align="center">
-<img width="420" height="273" alt="Squeegee Demo" src="https://github.com/user-attachments/assets/932859d1-954e-4520-8b46-b41f86655d19" />
+<img width="420" height="273" alt="Squeegee Demo" src="https://github.com/user-attachments/assets/abc2113f-7100-4365-a042-207bb883c146" />
 </div>
 
 ## Features
