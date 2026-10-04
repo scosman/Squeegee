@@ -43,7 +43,7 @@ Set rules like: auto-close Finder windows idle for 4+ hours
 
 Rules are setup per app, and applied per window.
 
-## Accessibility Permission
+## Permissions
 
 Squeegee needs the **Accessibility** permission to see and close windows of other apps. The app prompts for it on first launch. Nothing leaves your Mac -- the permission is used only to close windows locally.
 
