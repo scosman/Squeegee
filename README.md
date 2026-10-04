@@ -47,6 +47,8 @@ Rules are setup per app, and applied per window.
 
 Squeegee needs the **Accessibility** permission to see and close windows of other apps. The app prompts for it on first launch. Nothing leaves your Mac -- the permission is used only to close windows locally.
 
+Optionally needs permission to control Finder. With it, you can re-launch Finder windows to the exact path they were on when they were closed. Without it, it launches to the default directory.
+
 ## Requirements
 
 - macOS 15.0 (Sequoia) or later
