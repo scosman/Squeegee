@@ -249,7 +249,7 @@ A built-in list. Bundle IDs are verified during implementation; apps not found a
 | Category | App (bundle ID) | Close after | Measure from | Quit when last window closed | Why |
 |---|---|---|---|---|---|
 | Files | Finder (`com.apple.finder`) | 6 h | Last active | n/a | Folder windows pile up; no data loss. |
-| Files | Preview (`com.apple.Preview`) | 12 h | Last active | off | Read-only viewing in most cases. |
+| Files | Preview (`com.apple.Preview`) | 12 h | Last active | **If closed by Squeegee** | Read-only viewing in most cases. |
 | Media | Photos (`com.apple.Photos`) | 2 h | Last active | off | Uses a lot of resources; no data loss. |
 | Media | QuickTime Player (`com.apple.QuickTimePlayerX`) | 2 h | Last active | **Always** | Stays running with no windows; no data loss. |
 | Media | VLC (`org.videolan.vlc`) | 2 h | Last active | **Always** | Same as QuickTime. |

@@ -16,7 +16,7 @@ public struct SuggestionCatalog: Sendable {
             isEnabled: true, closeAfter: 6 * 3600, measureFrom: .lastActive, quitPolicy: .never
         )),
         CatalogEntry(bundleID: "com.apple.Preview", category: .files, rule: Rule(
-            isEnabled: true, closeAfter: 12 * 3600, measureFrom: .lastActive, quitPolicy: .never
+            isEnabled: true, closeAfter: 12 * 3600, measureFrom: .lastActive, quitPolicy: .ifClosedBySqueegee
         )),
 
         // Media
