@@ -67,5 +67,6 @@ See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for build instructions, architect
 
 [MIT License](LICENSE)
 
-<img width="500" height="649" alt="b2u4a4" src="https://github.com/user-attachments/assets/69856c18-6968-4c96-9ffa-87f756df6277" />
+<img width="491" height="639" alt="Screenshot 2026-10-06 at 2 21 46 PM" src="https://github.com/user-attachments/assets/08d81f5f-0096-4e34-a94f-eeb5c921d455" />
+
 
