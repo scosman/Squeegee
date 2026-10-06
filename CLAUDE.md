@@ -143,6 +143,8 @@ CI pins **Xcode 26.3** via `DEVELOPER_DIR` (the `macos-15` runner's default Xcod
 - **`app-tier`** (non-gating, `continue-on-error`): `make build-app`.
 - **`manual-tests-check`** (non-gating, `continue-on-error`): `make manual-tests-check`.
 
+Separately, `release-asset-check.yml` runs on release publish/edit (and manually): it fails if the latest release lacks `Squeegee.dmg` or the README download URL doesn't resolve.
+
 ### Agent command surface (hooks-mcp)
 
 Agents use `hooks-mcp` MCP tools: `mcp__hooks-mcp__build`, `…__test`, `…__lint`, `…__format`, `…__precommit_checks`, `…__build_app`, `…__profile_app`, `…__bench`, `…__generate`, `…__bootstrap`, `…__manual_tests_check`. These run outside the Bash sandbox.

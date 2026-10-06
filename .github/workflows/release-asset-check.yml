@@ -1,0 +1,37 @@
+name: Release asset check
+
+on:
+  release:
+    types: [released, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-dmg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Latest release has Squeegee.dmg
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          assets=$(gh release view -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          echo "Latest release: $tag"
+          echo "$assets"
+          if ! grep -qx 'Squeegee.dmg' <<< "$assets"; then
+            echo "::error::Latest release $tag has no Squeegee.dmg; the README download link will 404"
+            exit 1
+          fi
+
+      # The asset CDN rejects HEAD on its signed URLs, so fetch a single byte instead.
+      - name: README download URL resolves
+        env:
+          DMG_URL: https://github.com/scosman/Squeegee/releases/latest/download/Squeegee.dmg
+        run: |
+          if ! status=$(curl -sSL --fail --retry 3 --range 0-0 -o /dev/null -w '%{http_code}' "$DMG_URL"); then
+            echo "::error::README download URL $DMG_URL failed (HTTP ${status:-none})"
+            exit 1
+          fi
+          echo "$DMG_URL -> HTTP $status"
