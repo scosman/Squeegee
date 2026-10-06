@@ -25,6 +25,14 @@ public struct AppIconView: View {
     private static let lock = NSLock()
     private static var cache: [String: NSImage] = [:]
 
+    /// Removes all entries from the icon cache, releasing the cached images.
+    /// Called when the main window closes to free memory while in tray-only mode.
+    public static func clearCache() {
+        lock.lock()
+        cache.removeAll()
+        lock.unlock()
+    }
+
     /// Returns the cached icon for a bundle ID, loading it on first access.
     /// The image is stored at its original size; callers resize via SwiftUI.
     static func icon(for bundleID: String) -> NSImage {
