@@ -4,6 +4,7 @@ import AppShellUI
 import MenuBarUI
 import OSLog
 import Persistence
+import SharedUI
 import SwiftUI
 import SystemBridge
 
@@ -123,16 +124,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Observes window close to switch the activation policy back to accessory.
+    /// Observes window close. When the main window closes, tears it down to
+    /// free the SwiftUI tree and icon cache while in tray-only mode.
     private func observeWindowClose() {
         windowObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
+        ) { [weak self] notification in
+            let closingWindow = notification.object as? NSWindow
             DispatchQueue.main.async {
-                self?.checkActivationPolicy()
+                guard let self else { return }
+                if closingWindow === self.mainWindow {
+                    self.tearDownMainWindow()
+                }
+                self.checkActivationPolicy()
             }
+        }
+    }
+
+    /// Releases the main window's SwiftUI hosting view, icon cache, and
+    /// window reference so memory is reclaimed while running tray-only.
+    /// `showMainWindow()` rebuilds everything from scratch on next open.
+    private func tearDownMainWindow() {
+        logger.info("Tearing down main window to reclaim memory")
+        mainWindow?.contentView = nil
+        mainWindow = nil
+        AppIconView.clearCache()
+
+        // Return freed pages to the OS one run-loop turn later, after
+        // autoreleased objects from the teardown have been deallocated.
+        DispatchQueue.main.async {
+            malloc_zone_pressure_relief(nil, 0)
         }
     }
 
@@ -194,8 +217,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.contentView = hostingView
         window.center()
         window.contentMinSize = NSSize(width: 640, height: 440)
-        // Prevent the system from releasing the window on close; we manage
-        // the lifetime ourselves via the mainWindow property.
+        // Prevent the system from releasing the window on close; our
+        // willCloseNotification handler tears it down on the next run-loop
+        // turn and needs the object alive until then.
         window.isReleasedWhenClosed = false
 
         // Install an empty AppKit-owned NSToolbar so the window keeps

@@ -53,6 +53,8 @@ targets:
       - package: SqueegeeKit
         product: MenuBarUI
       - package: SqueegeeKit
+        product: SharedUI
+      - package: SqueegeeKit
         product: SystemBridge
       - package: SqueegeeKit
         product: Persistence
