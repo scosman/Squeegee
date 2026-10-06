@@ -1,5 +1,6 @@
 import ApplicationServices
 import Engine
+import Foundation
 import os
 
 /// An `@unchecked Sendable` wrapper for an `AXUIElement`. The element is only
@@ -17,7 +18,11 @@ public actor AXWindowService: WindowInspecting, WindowClosing {
         category: "AXWindowService"
     )
 
-    public init() {}
+    private let ownPID: Int32
+
+    public init(ownPID: Int32 = ProcessInfo.processInfo.processIdentifier) {
+        self.ownPID = ownPID
+    }
 
     // MARK: - Private bridge
 
@@ -90,6 +95,10 @@ public actor AXWindowService: WindowInspecting, WindowClosing {
     // MARK: - Focused window
 
     public func focusedWindowID(pid: Int32) async -> UInt32? {
+        // Our own AX requests are served by our main thread, and our windows
+        // are never tracked, so do not query ourselves.
+        guard pid != ownPID else { return nil }
+
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.5)
 

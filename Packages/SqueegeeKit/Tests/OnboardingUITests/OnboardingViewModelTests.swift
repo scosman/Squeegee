@@ -192,7 +192,8 @@ struct OnboardingViewModelTests {
         let rules = store.appRules()
         #expect(rules.contains { $0.bundleID == "com.apple.finder" })
 
-        // Verify login item was enabled
+        // Verify login item was enabled (set on a background task)
+        await settle()
         #expect(bundle.loginItem.enabled)
     }
 

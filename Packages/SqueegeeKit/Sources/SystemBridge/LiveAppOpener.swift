@@ -40,8 +40,13 @@ public struct LiveAppOpener: AppOpening, Sendable {
         )
     }
 
-    public func fileExists(_ url: URL) -> Bool {
-        FileManager.default.fileExists(atPath: url.path)
+    /// Runs on a detached task: the check can block on network, cloud, or
+    /// disconnected volumes.
+    public func fileExists(_ url: URL) async -> Bool {
+        let path = url.path
+        return await Task.detached {
+            FileManager.default.fileExists(atPath: path)
+        }.value
     }
 
     private func appURL(for bundleID: String) -> URL? {

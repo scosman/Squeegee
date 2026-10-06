@@ -1,179 +1,138 @@
 {
   "sb_bridge_available" : {
-    "note" : "Bridge available: true, macOS Version 15.6.1 (Build 24G90)",
-    "status" : "pass",
-    "stepID" : "sb_bridge_available",
-    "timestamp" : "2026-09-30T02:10:31Z"
+    "status" : "not-run",
+    "stepID" : "sb_bridge_available"
   },
   "sb_close_fullscreen" : {
-    "note" : "both close",
-    "status" : "pass",
-    "stepID" : "sb_close_fullscreen",
-    "timestamp" : "2026-09-30T03:28:54Z"
+    "status" : "not-run",
+    "stepID" : "sb_close_fullscreen"
   },
   "sb_close_hung_app" : {
-    "status" : "pass",
-    "stepID" : "sb_close_hung_app",
-    "timestamp" : "2026-09-30T02:33:49Z"
+    "status" : "not-run",
+    "stepID" : "sb_close_hung_app"
   },
   "sb_close_minimized" : {
-    "status" : "pass",
-    "stepID" : "sb_close_minimized",
-    "timestamp" : "2026-09-30T02:29:08Z"
+    "status" : "not-run",
+    "stepID" : "sb_close_minimized"
   },
   "sb_close_no_button" : {
-    "status" : "pass",
-    "stepID" : "sb_close_no_button",
-    "timestamp" : "2026-09-30T03:28:59Z"
+    "status" : "not-run",
+    "stepID" : "sb_close_no_button"
   },
   "sb_close_other_space" : {
-    "status" : "pass",
-    "stepID" : "sb_close_other_space",
-    "timestamp" : "2026-09-30T02:29:50Z"
+    "status" : "not-run",
+    "stepID" : "sb_close_other_space"
   },
   "sb_close_standard" : {
-    "status" : "pass",
-    "stepID" : "sb_close_standard",
-    "timestamp" : "2026-09-30T02:27:33Z"
+    "status" : "not-run",
+    "stepID" : "sb_close_standard"
   },
   "sb_close_standard_action" : {
-    "status" : "pass",
-    "stepID" : "sb_close_standard_action",
-    "timestamp" : "2026-09-30T02:27:12Z"
+    "status" : "not-run",
+    "stepID" : "sb_close_standard_action"
   },
   "sb_close_tabs" : {
-    "note" : "Each tab is listed as its own window row; Close closes only that tab.",
-    "status" : "pass",
-    "stepID" : "sb_close_tabs",
-    "timestamp" : "2026-09-30T02:31:52Z"
+    "status" : "not-run",
+    "stepID" : "sb_close_tabs"
   },
   "sb_close_unsaved" : {
-    "status" : "pass",
-    "stepID" : "sb_close_unsaved",
-    "timestamp" : "2026-09-30T02:28:26Z"
+    "status" : "not-run",
+    "stepID" : "sb_close_unsaved"
   },
   "sb_document_urls" : {
-    "note" : "finder has title no URL, quicktimes has url, preview has url",
-    "status" : "fail",
-    "stepID" : "sb_document_urls",
-    "timestamp" : "2026-09-30T02:36:11Z"
+    "status" : "not-run",
+    "stepID" : "sb_document_urls"
   },
   "sb_enum_fullscreen" : {
-    "note" : "same ID still there, loses URL\/title. A new ID also appears",
-    "status" : "pass",
-    "stepID" : "sb_enum_fullscreen",
-    "timestamp" : "2026-09-30T03:30:11Z"
+    "status" : "not-run",
+    "stepID" : "sb_enum_fullscreen"
   },
   "sb_enum_matches" : {
-    "status" : "pass",
-    "stepID" : "sb_enum_matches",
-    "timestamp" : "2026-09-30T03:30:18Z"
+    "status" : "not-run",
+    "stepID" : "sb_enum_matches"
   },
   "sb_enum_minimized" : {
-    "status" : "pass",
-    "stepID" : "sb_enum_minimized",
-    "timestamp" : "2026-09-30T03:29:49Z"
+    "status" : "not-run",
+    "stepID" : "sb_enum_minimized"
   },
   "sb_enum_other_space" : {
-    "status" : "pass",
-    "stepID" : "sb_enum_other_space",
-    "timestamp" : "2026-09-30T02:18:49Z"
+    "status" : "not-run",
+    "stepID" : "sb_enum_other_space"
   },
   "sb_enum_titles" : {
-    "note" : "it did not ask for it",
-    "status" : "pass",
-    "stepID" : "sb_enum_titles",
-    "timestamp" : "2026-09-30T03:29:38Z"
+    "status" : "not-run",
+    "stepID" : "sb_enum_titles"
   },
   "sb_focus_app_switch" : {
-    "status" : "pass",
-    "stepID" : "sb_focus_app_switch",
-    "timestamp" : "2026-09-30T02:24:31Z"
+    "status" : "not-run",
+    "stepID" : "sb_focus_app_switch"
   },
   "sb_focus_events" : {
-    "status" : "pass",
-    "stepID" : "sb_focus_events",
-    "timestamp" : "2026-09-30T02:26:35Z"
+    "status" : "not-run",
+    "stepID" : "sb_focus_events"
   },
   "sb_focus_launching_app" : {
-    "status" : "pass",
-    "stepID" : "sb_focus_launching_app",
-    "timestamp" : "2026-09-30T02:25:52Z"
+    "status" : "not-run",
+    "stepID" : "sb_focus_launching_app"
   },
   "sb_focus_new_window" : {
-    "status" : "pass",
-    "stepID" : "sb_focus_new_window",
-    "timestamp" : "2026-09-30T02:25:16Z"
+    "status" : "not-run",
+    "stepID" : "sb_focus_new_window"
   },
   "sb_focus_sleep" : {
-    "status" : "pass",
-    "stepID" : "sb_focus_sleep",
-    "timestamp" : "2026-09-30T02:26:30Z"
+    "status" : "not-run",
+    "stepID" : "sb_focus_sleep"
   },
   "sb_installed_apps" : {
-    "status" : "pass",
-    "stepID" : "sb_installed_apps",
-    "timestamp" : "2026-09-30T03:26:32Z"
+    "status" : "not-run",
+    "stepID" : "sb_installed_apps"
   },
   "sb_installed_apps_check" : {
-    "note" : "Found 259 apps. Finder: yes, Preview: yes",
-    "status" : "pass",
-    "stepID" : "sb_installed_apps_check",
-    "timestamp" : "2026-09-30T02:37:33Z"
+    "status" : "not-run",
+    "stepID" : "sb_installed_apps_check"
   },
   "sb_login_item" : {
-    "status" : "pass",
-    "stepID" : "sb_login_item",
-    "timestamp" : "2026-10-02T21:27:49Z"
+    "status" : "not-run",
+    "stepID" : "sb_login_item"
   },
   "sb_login_item_action" : {
-    "status" : "pass",
-    "stepID" : "sb_login_item_action",
-    "timestamp" : "2026-10-02T21:27:23Z"
+    "status" : "not-run",
+    "stepID" : "sb_login_item_action"
   },
   "sb_permission_notification" : {
-    "status" : "pass",
-    "stepID" : "sb_permission_notification",
-    "timestamp" : "2026-09-30T02:11:32Z"
+    "status" : "not-run",
+    "stepID" : "sb_permission_notification"
   },
   "sb_permission_prompt" : {
-    "status" : "pass",
-    "stepID" : "sb_permission_prompt",
-    "timestamp" : "2026-09-30T02:10:55Z"
+    "status" : "not-run",
+    "stepID" : "sb_permission_prompt"
   },
   "sb_permission_prompt_action" : {
-    "status" : "pass",
-    "stepID" : "sb_permission_prompt_action",
-    "timestamp" : "2026-09-30T02:10:35Z"
+    "status" : "not-run",
+    "stepID" : "sb_permission_prompt_action"
   },
   "sb_permission_revoke" : {
-    "status" : "pass",
-    "stepID" : "sb_permission_revoke",
-    "timestamp" : "2026-09-30T02:11:47Z"
+    "status" : "not-run",
+    "stepID" : "sb_permission_revoke"
   },
   "sb_quit_normal" : {
-    "status" : "pass",
-    "stepID" : "sb_quit_normal",
-    "timestamp" : "2026-09-30T03:26:27Z"
+    "status" : "not-run",
+    "stepID" : "sb_quit_normal"
   },
   "sb_quit_normal_action" : {
-    "status" : "pass",
-    "stepID" : "sb_quit_normal_action",
-    "timestamp" : "2026-09-30T03:26:25Z"
+    "status" : "not-run",
+    "stepID" : "sb_quit_normal_action"
   },
   "sb_quit_unsaved" : {
-    "status" : "pass",
-    "stepID" : "sb_quit_unsaved",
-    "timestamp" : "2026-09-30T03:26:15Z"
+    "status" : "not-run",
+    "stepID" : "sb_quit_unsaved"
   },
   "sb_reopen" : {
-    "status" : "pass",
-    "stepID" : "sb_reopen",
-    "timestamp" : "2026-09-30T03:26:07Z"
+    "status" : "not-run",
+    "stepID" : "sb_reopen"
   },
   "sb_reopen_action" : {
-    "status" : "pass",
-    "stepID" : "sb_reopen_action",
-    "timestamp" : "2026-09-30T03:26:06Z"
+    "status" : "not-run",
+    "stepID" : "sb_reopen_action"
   }
 }

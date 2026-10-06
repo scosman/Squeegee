@@ -99,8 +99,8 @@ public protocol AccessibilityPermissionPort: Sendable {
 }
 
 public protocol LoginItemPort: Sendable {
-    func isEnabled() -> Bool
-    func setEnabled(_ enabled: Bool) throws
+    func isEnabled() async -> Bool          // XPC; runs off-main
+    func setEnabled(_ enabled: Bool) async throws
 }
 
 public protocol InstalledAppScanning: Sendable { func installedApps() async -> [InstalledApp] }
@@ -108,7 +108,7 @@ public protocol InstalledAppScanning: Sendable { func installedApps() async -> [
 public protocol AppOpening: Sendable {
     func open(documentURL: URL, withBundleID: String) async throws
     func launch(bundleID: String) async throws                // activate if running
-    func fileExists(_ url: URL) -> Bool
+    func fileExists(_ url: URL) async -> Bool                 // can block on slow volumes; runs off-main
 }
 
 public protocol AppScheduler: Sendable {                      // clock + timers; see engine.md §6.2
@@ -218,21 +218,24 @@ This never presses anything other than the close button, and never interacts wit
 
 Why `wasListed` matters: if AX delivers a press to a kept element of a window on another Space, and the window does not close, the engine must treat this as "unreachable, retry later" and not as "the app declined". See engine.md §4 (verification).
 
-## 4. `FrontmostFocusObserver` (`@MainActor final class`; implements `FocusObserving`)
+## 4. `FrontmostFocusObserver` (`final class`, `@unchecked Sendable`; implements `FocusObserving`)
 
 It holds **one** `AXObserver`, attached only to the frontmost app. This avoids the AltTab problems (focus events from background apps, and many registrations to manage).
 
+**Threading:** `AXObserverCreate` and `AXObserverAddNotification` send blocking messages to the target app. A busy app stalls the caller for up to the messaging timeout. So all AX work, the observer's run-loop source, and all mutable state live on one dedicated thread (`AXRunLoopThread`, a thread that runs a `CFRunLoop` for its whole life). The main thread never makes these calls.
+
 - `observe(pid:)`:
+  - Our own pid counts as `nil`: our AX requests are served by our own main thread, and our windows are not tracked.
   - If `pid` equals the current pid → no-op.
-  - Otherwise remove the old observer: `CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(old), .defaultMode)`, then release it.
+  - Otherwise remove the old observer: `CFRunLoopRemoveSource(<worker run loop>, AXObserverGetRunLoopSource(old), .defaultMode)`, then release it.
   - If `pid == nil` → stop.
-  - Otherwise `AXObserverCreate(pid, callback, &observer)`. On the app element, add `kAXFocusedWindowChangedNotification`, `kAXMainWindowChangedNotification`, and `kAXWindowCreatedNotification`, with `refcon = Unmanaged.passUnretained(self)`. Add the run loop source to the main run loop in `.defaultMode`.
+  - Otherwise `AXObserverCreate(pid, callback, &observer)`. On the app element (messaging timeout 0.5 s), add `kAXFocusedWindowChangedNotification`, `kAXMainWindowChangedNotification`, and `kAXWindowCreatedNotification`, with `refcon = Unmanaged.passUnretained(self)`. Add the run loop source to the worker run loop in `.defaultMode`.
 - **Registration retry:** if `AXObserverAddNotification` returns `.cannotComplete` or `.notImplemented` (the app is still launching), retry the whole registration after 0.5, 1, 2, and 4 s, only while `pid` is still the target. `.notificationUnsupported` for one notification is accepted (the others stay). After the last retry, log and rely on the 60 s reconciliation (engine.md §5).
-- **Callback:** a `@convention(c)` function. It takes `Date()` **first**, then yields `FocusSignal(pid:, kind:, at:)` into the stream:
+- **Callback:** a `@convention(c)` function on the worker thread. It takes `Date()` **first**, then yields `FocusSignal(pid:, kind:, at:)` into the stream:
   - focused-window-changed and main-window-changed → `.focusMayHaveChanged`.
   - window-created → `.windowCreated`.
 
-  It makes no AX calls on the main thread. `AppCore` asks `AXWindowService.focusedWindowID(pid:)` off-main.
+  It makes no AX calls. `AppCore` asks `AXWindowService.focusedWindowID(pid:)` off-main. That call returns `nil` for our own pid.
 - `signals()` returns one `AsyncStream` (`bufferingPolicy: .bufferingNewest(64)`), created in `init`.
 
 ## 5. `LiveWorkspaceEvents` (implements `WorkspaceEventSource`)
@@ -264,7 +267,7 @@ This is not a documented notification. It is verified by the ManualTestApp (`sb_
 
 ## 7. Other live ports
 
-- **`LiveLoginItem`:** `SMAppService.mainApp`. `isEnabled()` is `status == .enabled`. `setEnabled` calls `register()` / `unregister()` (errors are rethrown).
+- **`LiveLoginItem`:** `SMAppService.mainApp`. `isEnabled()` is `status == .enabled`. `setEnabled` calls `register()` / `unregister()` (errors are rethrown). Both run on a detached task (synchronous XPC).
 - **`LiveInstalledAppScanner`:**
   - Enumerate `.app` bundles in `/Applications` (depth 2, which covers `/Applications/Utilities` and vendor folders), `/System/Applications` (depth 2), and `~/Applications` (depth 2).
   - Add the `bundleURL` of the running apps.
@@ -274,7 +277,7 @@ This is not a documented notification. It is verified by the ManualTestApp (`sb_
 - **`LiveAppOpener`:**
   - `open(documentURL:withBundleID:)` → `NSWorkspace.shared.open([url], withApplicationAt: appURL(for: bundleID), configuration: .init())`. `configuration.activates = true`. (Finder exposes no document URL, so Finder closures are never reopened this way.)
   - `launch(bundleID:)` → `openApplication(at:configuration:)`.
-  - `fileExists` → `FileManager.default.fileExists(atPath: url.path)`.
+  - `fileExists` → `FileManager.default.fileExists(atPath: url.path)`, on a detached task.
 - **`LiveAppScheduler`:** implements `AppScheduler` with `DispatchSource` timers on the main queue (details in engine.md §6.2).
 - **`LiveAppTerminator`:** `NSRunningApplication(processIdentifier:)?.terminate() ?? false`. It never calls `forceTerminate()`.
 

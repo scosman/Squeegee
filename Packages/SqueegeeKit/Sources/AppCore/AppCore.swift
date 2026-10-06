@@ -100,6 +100,11 @@ public final class AppCore {
     /// *may* drop the source on some OS versions before it fires.
     private var verificationTimers: [any Engine.Cancellable] = []
 
+    /// Last known file-existence result per recent-closure document URL.
+    /// `menuContent()` reads only this cache, never the file system.
+    private var fileExistsCache: [URL: Bool] = [:]
+    private var fileExistenceRefresh: Task<Void, Never>?
+
     // MARK: - Constants
 
     private static let scanInterval: TimeInterval = 60
@@ -151,6 +156,8 @@ public final class AppCore {
         startEventStreams()
 
         // 4. Initial sync
+        Task { await refreshLaunchAtLogin() }
+        refreshFileExistence(for: Set(store.recentClosures(limit: 8).compactMap(\.documentURL)))
         await scan()
         await inspectAllPids()
         await syncFocus()
@@ -277,13 +284,10 @@ public final class AppCore {
 
     // MARK: - Login item
 
-    public var launchAtLogin: Bool {
-        ports.loginItem.isEnabled()
-    }
-
-    public func setLaunchAtLogin(_ enabled: Bool) throws {
-        try ports.loginItem.setEnabled(enabled)
-    }
+    /// Last known Launch at Login state. The system call is slow XPC, so the
+    /// UI reads this cached value. It is refreshed at start, each time
+    /// Squeegee becomes active, and after each change.
+    public private(set) var launchAtLogin = false
 
     // MARK: - Navigation
 
@@ -347,12 +351,11 @@ public final class AppCore {
         let activeSchedules = plan.schedules.filter { activeStatuses.contains($0.status) }
         let closures = store.recentClosures(limit: 8)
 
-        var fileExistsByURL: [URL: Bool] = [:]
-        for closure in closures {
-            if let url = closure.documentURL {
-                fileExistsByURL[url] = ports.opener.fileExists(url)
-            }
-        }
+        // Read the cache only: a file check can block on slow volumes. URLs not
+        // yet checked count as existing. The refresh serves the next open.
+        let urls = Set(closures.compactMap(\.documentURL))
+        let fileExistsByURL = fileExistsCache.filter { urls.contains($0.key) }
+        refreshFileExistence(for: urls)
 
         let pauseMode = currentPauseMode()
 
@@ -399,13 +402,15 @@ public final class AppCore {
     public func completeOnboarding() {
         store.settings.onboardingComplete = true
         store.save()
-        // Enable login item by default
-        do {
-            try ports.loginItem.setEnabled(true)
-        } catch {
-            logger.error("Failed to enable login item: \(error.localizedDescription, privacy: .public)")
-        }
         route = .settings(.general)
+        // Enable login item by default
+        Task {
+            do {
+                try await setLaunchAtLogin(true)
+            } catch {
+                logger.error("Failed to enable login item: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 }
 
@@ -481,6 +486,9 @@ extension AppCore {
 
         case .ownAppBecameActive:
             refreshPermission()
+            // The user can change login items in System Settings. Not awaited,
+            // so a slow daemon does not delay later workspace events.
+            Task { await refreshLaunchAtLogin() }
         }
     }
 
@@ -891,6 +899,46 @@ extension AppCore {
     private func stopScanTimer() {
         scanTimer?.cancel()
         scanTimer = nil
+    }
+}
+
+// MARK: - Login item
+
+extension AppCore {
+    /// Sets Launch at Login. The new value shows at once; the system's actual
+    /// state replaces it when the call completes, also on error.
+    public func setLaunchAtLogin(_ enabled: Bool) async throws {
+        launchAtLogin = enabled
+        do {
+            try await ports.loginItem.setEnabled(enabled)
+        } catch {
+            await refreshLaunchAtLogin()
+            throw error
+        }
+        await refreshLaunchAtLogin()
+    }
+
+    private func refreshLaunchAtLogin() async {
+        launchAtLogin = await ports.loginItem.isEnabled()
+    }
+}
+
+// MARK: - File existence
+
+extension AppCore {
+    /// Re-checks `urls` off the main thread and updates `fileExistsCache`.
+    /// Skipped while a refresh is in flight. Entries for other URLs are dropped.
+    private func refreshFileExistence(for urls: Set<URL>) {
+        guard fileExistenceRefresh == nil, !urls.isEmpty else { return }
+        fileExistenceRefresh = Task { [weak self] in
+            guard let opener = self?.ports.opener else { return }
+            var results: [URL: Bool] = [:]
+            for url in urls {
+                results[url] = await opener.fileExists(url)
+            }
+            self?.fileExistsCache = results
+            self?.fileExistenceRefresh = nil
+        }
     }
 }
 
