@@ -104,6 +104,26 @@ struct MenuContentBuilderSectionTests {
         #expect(upNext.items[0].title == "Visible")
     }
 
+    @Test func upNextEmptyTitle_fallsBackToAppName() throws {
+        let schedules = [
+            makeSchedule(appName: "System Settings", title: "", deadline: testNow.addingTimeInterval(3600))
+        ]
+        let content = MenuContentBuilder.build(input: defaultInput(schedules: schedules))
+        let upNext = try #require(content.sections.first(where: { $0.header == "Closing Next" }))
+        #expect(upNext.items[0].title == "System Settings")
+        #expect(upNext.items[0].subtitle?.contains("System Settings") == true)
+    }
+
+    @Test func upNextNilTitle_fallsBackToAppName() throws {
+        let schedules = [
+            makeSchedule(appName: "System Settings", title: nil, deadline: testNow.addingTimeInterval(3600))
+        ]
+        let content = MenuContentBuilder.build(input: defaultInput(schedules: schedules))
+        let upNext = try #require(content.sections.first(where: { $0.header == "Closing Next" }))
+        #expect(upNext.items[0].title == "System Settings")
+        #expect(upNext.items[0].subtitle?.contains("System Settings") == true)
+    }
+
     @Test func upNextClickOpensRule() throws {
         let schedules = [
             makeSchedule(bundleID: "com.apple.finder", status: .scheduled)

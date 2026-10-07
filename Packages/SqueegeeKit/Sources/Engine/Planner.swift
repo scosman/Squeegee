@@ -146,7 +146,10 @@ extension Planner {
             key: window.key,
             bundleID: window.bundleID,
             appName: window.appName,
-            title: meta.title,
+            title: DefaultWindowNames.effectiveTitle(
+                axTitle: meta.title,
+                bundleID: window.bundleID
+            ),
             ruleSource: resolved.source,
             deadline: deadline,
             status: status
