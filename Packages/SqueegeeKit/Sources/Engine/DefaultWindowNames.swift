@@ -33,4 +33,28 @@ public enum DefaultWindowNames {
         }
         return title(for: bundleID)
     }
+
+    /// Returns a guaranteed non-empty display title for a window.
+    ///
+    /// Fallback chain: stored/AX title → per-bundle default → app name → "Open Window".
+    /// Whitespace-only strings are treated as empty at each step.
+    public static func displayTitle(
+        windowTitle: String?,
+        bundleID: String,
+        appName: String
+    ) -> String {
+        if let trimmed = windowTitle?.trimmingCharacters(in: .whitespaces),
+           !trimmed.isEmpty
+        {
+            return trimmed
+        }
+        if let bundleDefault = title(for: bundleID) {
+            return bundleDefault
+        }
+        let trimmedApp = appName.trimmingCharacters(in: .whitespaces)
+        if !trimmedApp.isEmpty {
+            return trimmedApp
+        }
+        return "Open Window"
+    }
 }

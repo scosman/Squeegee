@@ -140,7 +140,9 @@ public enum MenuContentBuilder {
 
         let shown = Array(visible.prefix(maxClosingNext))
         var items = shown.map { schedule -> MenuItem in
-            let title = schedule.title.flatMap { $0.isEmpty ? nil : $0 } ?? schedule.appName
+            let title = DefaultWindowNames.displayTitle(
+                windowTitle: schedule.title, bundleID: schedule.bundleID, appName: schedule.appName
+            )
             let statusText = TimeFormatting.formatScheduleStatus(
                 schedule.status, deadline: schedule.deadline, now: input.now
             )
@@ -201,7 +203,9 @@ public enum MenuContentBuilder {
             )
         }
 
-        let title = closure.windowTitle.flatMap { $0.isEmpty ? nil : $0 } ?? closure.appName
+        let title = DefaultWindowNames.displayTitle(
+            windowTitle: closure.windowTitle, bundleID: closure.bundleID, appName: closure.appName
+        )
 
         if let url = closure.documentURL {
             let fileExists = input.fileExistsByURL[url] ?? true
