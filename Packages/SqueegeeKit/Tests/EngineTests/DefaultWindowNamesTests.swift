@@ -75,4 +75,114 @@ struct DefaultWindowNamesTests {
         )
         #expect(result == "General")
     }
+
+    // MARK: - displayTitle
+
+    @Test func displayTitle_usesWindowTitle() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: "My Document",
+            bundleID: "com.example.app",
+            appName: "Example"
+        )
+        #expect(result == "My Document")
+    }
+
+    @Test func displayTitle_trimsWindowTitle() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: "  My Document  ",
+            bundleID: "com.example.app",
+            appName: "Example"
+        )
+        #expect(result == "My Document")
+    }
+
+    @Test func displayTitle_nilTitle_fallsToBundleDefault() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: nil,
+            bundleID: "com.apple.systempreferences",
+            appName: "System Preferences"
+        )
+        #expect(result == "System Settings")
+    }
+
+    @Test func displayTitle_emptyTitle_fallsToBundleDefault() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: "",
+            bundleID: "com.apple.systempreferences",
+            appName: "System Preferences"
+        )
+        #expect(result == "System Settings")
+    }
+
+    @Test func displayTitle_whitespaceTitle_fallsToBundleDefault() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: "   ",
+            bundleID: "com.apple.AppStore",
+            appName: "App Store"
+        )
+        #expect(result == "App Store")
+    }
+
+    @Test func displayTitle_nilTitle_unknownBundle_fallsToAppName() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: nil,
+            bundleID: "com.example.app",
+            appName: "Example"
+        )
+        #expect(result == "Example")
+    }
+
+    @Test func displayTitle_emptyTitle_unknownBundle_fallsToAppName() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: "",
+            bundleID: "com.example.app",
+            appName: "Example"
+        )
+        #expect(result == "Example")
+    }
+
+    @Test func displayTitle_trimsAppName() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: nil,
+            bundleID: "com.example.app",
+            appName: "  Example  "
+        )
+        #expect(result == "Example")
+    }
+
+    @Test func displayTitle_emptyAppName_returnsOpenWindow() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: nil,
+            bundleID: "com.example.app",
+            appName: ""
+        )
+        #expect(result == "Open Window")
+    }
+
+    @Test func displayTitle_whitespaceAppName_returnsOpenWindow() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: nil,
+            bundleID: "com.example.app",
+            appName: "   "
+        )
+        #expect(result == "Open Window")
+    }
+
+    @Test func displayTitle_allEmpty_returnsOpenWindow() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: "",
+            bundleID: "com.unknown.app",
+            appName: ""
+        )
+        #expect(result == "Open Window")
+    }
+
+    @Test func displayTitle_allNilOrWhitespace_returnsOpenWindow() {
+        let result = DefaultWindowNames.displayTitle(
+            windowTitle: "   ",
+            bundleID: "com.unknown.app",
+            appName: "   "
+        )
+        #expect(result == "Open Window")
+    }
 }

@@ -116,7 +116,7 @@ RULES                          ← section header
 💬 Messages
   4h · last active
 …
-[+]                             ← bottom bar (no chevron, no −)
+[+] [−]                         ← bottom bar (no chevron)
 ```
 
 - **General** row: `gearshape` symbol.
@@ -128,7 +128,7 @@ RULES                          ← section header
     - **Choose App…**: an open panel in `/Applications` that accepts only `.app` bundles.
     - divider
     - **Suggested Rules…**: opens the Suggestions sheet (§4.5).
-  - There is no **−** button. Rule removal is via the **Remove Rule** button on the rule page, or via the Delete key. Both ask for confirmation naming the app ("Remove the rule for Finder? The app will use the global rule.").
+  - **−** removes the selected app rule. It is enabled only when an app rule is selected (disabled for General and "All other apps"). Clicking it shows the `RemoveRuleSheet` confirmation (same flow as the Delete key). It must not remove without confirmation.
 - A new app rule starts with: enabled, 6 hours, Last active, Keep app running. The new row is selected.
 - If the user adds an app that already has a rule, that rule is selected (no duplicate).
 - The selection is restored when the window reopens.
@@ -165,7 +165,7 @@ Downloads                              in 2h 10m
 Projects                               in 5h 40m
 Screenshots                   waiting — in use
 
-                                 [Remove Rule]
+                                [Remove Rule…]
 ```
 
 - **Header:** app icon (48 pt) and app name. For the global rule: `square.stack` symbol, "All other apps", and the subtitle "Applies to every app that doesn't have its own rule."
@@ -176,7 +176,7 @@ Screenshots                   waiting — in use
   - Opened: "Time since the window opened, or since Squeegee first saw it."
 - **When the last window closes:** a pop-up menu with **Keep app running**, **Quit if Squeegee closed it**, **Always quit app**. Each option has an `NSMenuItem.subtitle` in the dropdown. This section is **hidden** for the global rule and for Finder.
 - **Open Windows (N):** a read-only list of this app's managed windows (for the global rule: all windows covered by it, with the app icon on each row). Each row: window title (app name if there is no title) and time left, with the same text as the menu (§7). Sorted by time left. It updates live (once per minute, and immediately when the rule changes). Empty: "No open windows". For the global rule, each row has a trailing **+** button that creates an app-specific rule for that window's app and selects it (the button does not appear if the app already has a rule).
-- **Remove Rule:** a button at the bottom (app rules only). Asks for confirmation naming the app before removing ("Remove the rule for [App Name]?" / "The app will use the global rule." / Cancel + Remove). The confirmation is a custom SwiftUI `.sheet` (not `.confirmationDialog` or `.alert`, because both macOS system presentations render as an NSAlert panel that shows the app icon).
+- **Remove Rule…:** a plain (non-destructive) push button right-aligned below the last form section, outside the grouped section boxes (app rules only). The ellipsis signals that it asks for confirmation. Clicking it shows the `RemoveRuleSheet` confirmation naming the app ("Remove the rule for [App Name]?" / "The app will use the global rule." / Cancel + Remove). The confirmation is a custom SwiftUI `.sheet` (not `.confirmationDialog` or `.alert`, because both macOS system presentations render as an NSAlert panel that shows the app icon). The same confirmation is also reachable via the sidebar **−** button and the Delete key.
 - All changes apply immediately. There is no Save button (§4.2 of the functional spec).
 
 ### 4.4 Permission banner
