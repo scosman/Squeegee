@@ -32,7 +32,7 @@ struct OpenWindowsList: View {
     }
 
     private func windowRow(_ schedule: WindowSchedule) -> some View {
-        let title = schedule.title ?? schedule.appName
+        let title = schedule.title.flatMap { $0.isEmpty ? nil : $0 } ?? schedule.appName
         let statusText = TimeFormatting.formatScheduleStatus(
             schedule.status, deadline: schedule.deadline, now: Date()
         )

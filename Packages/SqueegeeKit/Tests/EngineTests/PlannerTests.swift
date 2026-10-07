@@ -588,3 +588,56 @@ private func makeInput(
     let resultRemoved = Planner.dryRun(ruleSet: ruleSetRemoved, state: state2, now: now)
     #expect(resultRemoved.windowsToClose.count == 1)
 }
+
+// MARK: - Title fallback via DefaultWindowNames
+
+@Test func nilTitle_knownApp_usesDefaultName() {
+    var state = TrackerState()
+    state.windows[key()] = makeTrackedWindow(
+        bundleID: "com.apple.systempreferences",
+        appName: "System Settings",
+        metadata: WindowMetadata(isStandard: true, title: nil)
+    )
+    state.apps[1] = makeTrackedApp(bundleID: "com.apple.systempreferences", appName: "System Settings")
+
+    let plan = Planner.plan(makeInput(state: state))
+    #expect(plan.schedules[0].title == "System Settings")
+}
+
+@Test func emptyTitle_knownApp_usesDefaultName() {
+    var state = TrackerState()
+    state.windows[key()] = makeTrackedWindow(
+        bundleID: "com.apple.systempreferences",
+        appName: "System Settings",
+        metadata: WindowMetadata(isStandard: true, title: "")
+    )
+    state.apps[1] = makeTrackedApp(bundleID: "com.apple.systempreferences", appName: "System Settings")
+
+    let plan = Planner.plan(makeInput(state: state))
+    #expect(plan.schedules[0].title == "System Settings")
+}
+
+@Test func realTitle_knownApp_keepsRealTitle() {
+    var state = TrackerState()
+    state.windows[key()] = makeTrackedWindow(
+        bundleID: "com.apple.systempreferences",
+        appName: "System Settings",
+        metadata: WindowMetadata(isStandard: true, title: "General")
+    )
+    state.apps[1] = makeTrackedApp(bundleID: "com.apple.systempreferences", appName: "System Settings")
+
+    let plan = Planner.plan(makeInput(state: state))
+    #expect(plan.schedules[0].title == "General")
+}
+
+@Test func nilTitle_unknownApp_titleRemainsNil() {
+    var state = TrackerState()
+    state.windows[key()] = makeTrackedWindow(
+        bundleID: "com.test.app",
+        metadata: WindowMetadata(isStandard: true, title: nil)
+    )
+    state.apps[1] = makeTrackedApp()
+
+    let plan = Planner.plan(makeInput(state: state))
+    #expect(plan.schedules[0].title == nil)
+}

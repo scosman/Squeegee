@@ -610,7 +610,10 @@ extension AppCore {
                 store.appendClosure(ClosureValue(
                     bundleID: window.bundleID,
                     appName: window.appName,
-                    windowTitle: window.metadata?.title,
+                    windowTitle: DefaultWindowNames.effectiveTitle(
+                        axTitle: window.metadata?.title,
+                        bundleID: window.bundleID
+                    ),
                     documentURL: window.metadata?.documentURL,
                     kind: .windowClosed,
                     closedAt: closedAt
