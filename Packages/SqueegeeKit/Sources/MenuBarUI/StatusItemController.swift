@@ -21,6 +21,14 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     private var iconObservation: (any Sendable)?
     private var visibilityObservation: (any Sendable)?
 
+    /// Menu icons by bundle ID, loaded off the main thread. Kept while running
+    /// tray-only: each is a small 16 pt bitmap.
+    private var menuIcons: [String: NSImage] = [:]
+    /// Bundle IDs with no installed app, so no icon.
+    private var iconlessBundleIDs: Set<String> = []
+    /// Items waiting for an icon that is loading, by bundle ID.
+    private var itemsAwaitingIcon: [String: [NSMenuItem]] = [:]
+
     // MARK: - Icon configuration (ui_design section 3.1)
 
     /// Menu bar icon height in points. macOS status bar is 22pt; 18pt leaves 2pt padding per side.
@@ -59,12 +67,41 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     /// which avoids menu-tracking session conflicts from moving items between menus.
     public func menuNeedsUpdate(_ menu: NSMenu) {
         let content = core.menuContent()
-        MenuRenderer.populate(
+        let pending = MenuRenderer.populate(
             menu,
             with: content,
             target: self,
-            action: #selector(menuItemClicked(_:))
+            action: #selector(menuItemClicked(_:)),
+            icon: { [menuIcons] bundleID in menuIcons[bundleID] }
         )
+        loadIcons(for: pending.filter { !iconlessBundleIDs.contains($0.bundleID) })
+    }
+
+    // MARK: - Icons
+
+    /// Loads missing icons off the main thread. Each item gets its image when
+    /// the icon is ready; an open menu shows it at once.
+    private func loadIcons(for pending: [MenuRenderer.PendingIcon]) {
+        for entry in pending {
+            let isLoading = itemsAwaitingIcon[entry.bundleID] != nil
+            itemsAwaitingIcon[entry.bundleID, default: []].append(entry.item)
+            if isLoading { continue }
+
+            let bundleID = entry.bundleID
+            Task { [weak self] in
+                let icon = await MenuIconLoader.load(bundleID: bundleID)
+                guard let self else { return }
+                let items = itemsAwaitingIcon.removeValue(forKey: bundleID) ?? []
+                guard let icon else {
+                    iconlessBundleIDs.insert(bundleID)
+                    return
+                }
+                menuIcons[bundleID] = icon
+                for item in items {
+                    item.image = icon
+                }
+            }
+        }
     }
 
     // MARK: - Action dispatch

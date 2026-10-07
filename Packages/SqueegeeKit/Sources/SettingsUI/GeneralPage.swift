@@ -133,11 +133,13 @@ struct GeneralPage: View {
             Toggle("Launch at login", isOn: Binding(
                 get: { core.launchAtLogin },
                 set: { newValue in
-                    do {
-                        try core.setLaunchAtLogin(newValue)
-                        loginItemError = nil
-                    } catch {
-                        loginItemError = error.localizedDescription
+                    Task {
+                        do {
+                            try await core.setLaunchAtLogin(newValue)
+                            loginItemError = nil
+                        } catch {
+                            loginItemError = error.localizedDescription
+                        }
                     }
                 }
             ))

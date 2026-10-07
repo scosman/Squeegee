@@ -211,20 +211,17 @@ public final class FakeLoginItem: LoginItemPort, @unchecked Sendable {
 
     public init() {}
 
-    public nonisolated func isEnabled() -> Bool {
-        MainActor.assumeIsolated { enabled }
+    public nonisolated func isEnabled() async -> Bool {
+        await MainActor.run { enabled }
     }
 
-    public nonisolated func setEnabled(_ enabled: Bool) throws {
-        MainActor.assumeIsolated {
+    public nonisolated func setEnabled(_ enabled: Bool) async throws {
+        try await MainActor.run {
             setEnabledCalls.append(enabled)
             if shouldThrow {
-                return
+                throw FakeLoginItemError.testError
             }
             self.enabled = enabled
-        }
-        if MainActor.assumeIsolated({ shouldThrow }) {
-            throw FakeLoginItemError.testError
         }
     }
 
@@ -271,8 +268,8 @@ public final class FakeAppOpener: AppOpening, @unchecked Sendable {
         }
     }
 
-    public nonisolated func fileExists(_ url: URL) -> Bool {
-        MainActor.assumeIsolated { existingFiles.contains(url) }
+    public nonisolated func fileExists(_ url: URL) async -> Bool {
+        await MainActor.run { existingFiles.contains(url) }
     }
 
     public enum FakeOpenerError: Error {

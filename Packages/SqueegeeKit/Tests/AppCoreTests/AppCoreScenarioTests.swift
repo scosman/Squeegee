@@ -756,7 +756,9 @@ struct AppCoreScenarioTests {
 
         core.completeOnboarding()
         #expect(store.settings.onboardingComplete)
+        await settle()
         #expect(bundle.loginItem.enabled)
+        #expect(core.launchAtLogin)
 
         if case .settings = core.route {
             // Route changed to settings

@@ -3,20 +3,34 @@ import Presentation
 
 /// Converts a `MenuContent` value tree into an `NSMenu`.
 ///
-/// Pure rendering: no system calls beyond NSWorkspace icon lookup.
+/// Pure rendering: no system calls. App icons come from the caller's `icon`
+/// lookup, which must not block.
 /// Each `NSMenuItem` stores its `MenuAction?` in `representedObject`
 /// so the caller can dispatch it from a single action selector.
 public enum MenuRenderer {
+    /// An item that shows an app icon which was not ready when the menu was built.
+    public struct PendingIcon {
+        public let item: NSMenuItem
+        public let bundleID: String
+    }
+
     /// Populates the given menu in place with items from the content tree.
     /// Removes all existing items first, then adds sections, headers, and
     /// items directly — no intermediate NSMenu, no item-move between menus.
+    ///
+    /// `icon` returns the ready icon for a bundle ID, or nil when it is not
+    /// loaded. Returns the items that got no icon, so the caller can set the
+    /// image when the icon loads.
+    @discardableResult
     public static func populate(
         _ menu: NSMenu,
         with content: MenuContent,
         target: AnyObject,
-        action: Selector
-    ) {
+        action: Selector,
+        icon: (String) -> NSImage? = { _ in nil }
+    ) -> [PendingIcon] {
         menu.removeAllItems()
+        var pending: [PendingIcon] = []
 
         for (sectionIndex, section) in content.sections.enumerated() {
             if sectionIndex > 0 {
@@ -29,11 +43,12 @@ public enum MenuRenderer {
 
             for item in section.items {
                 let nsItem = makeNSMenuItem(
-                    from: item, target: target, action: action
+                    from: item, target: target, action: action, icon: icon, pending: &pending
                 )
                 menu.addItem(nsItem)
             }
         }
+        return pending
     }
 
     /// Renders the given content into a new NSMenu. Menu items that carry an
@@ -54,7 +69,9 @@ public enum MenuRenderer {
     private static func makeNSMenuItem(
         from item: MenuItem,
         target: AnyObject,
-        action: Selector
+        action: Selector,
+        icon: (String) -> NSImage?,
+        pending: inout [PendingIcon]
     ) -> NSMenuItem {
         let keyEquiv = item.keyEquivalent ?? ""
         let nsItem = NSMenuItem(
@@ -76,7 +93,11 @@ public enum MenuRenderer {
         }
 
         if let bundleID = item.bundleID {
-            nsItem.image = appIcon(bundleID: bundleID, size: 16)
+            if let image = icon(bundleID) {
+                nsItem.image = image
+            } else {
+                pending.append(PendingIcon(item: nsItem, bundleID: bundleID))
+            }
         }
 
         // Submenu
@@ -85,7 +106,7 @@ public enum MenuRenderer {
             subMenu.autoenablesItems = false
             for child in children {
                 let childItem = makeNSMenuItem(
-                    from: child, target: target, action: action
+                    from: child, target: target, action: action, icon: icon, pending: &pending
                 )
                 subMenu.addItem(childItem)
             }
@@ -93,17 +114,5 @@ public enum MenuRenderer {
         }
 
         return nsItem
-    }
-
-    /// Looks up an app icon by bundle ID at the given point size.
-    private static func appIcon(bundleID: String, size: CGFloat) -> NSImage? {
-        guard let url = NSWorkspace.shared.urlForApplication(
-            withBundleIdentifier: bundleID
-        ) else {
-            return nil
-        }
-        let icon = NSWorkspace.shared.icon(forFile: url.path)
-        icon.size = NSSize(width: size, height: size)
-        return icon
     }
 }

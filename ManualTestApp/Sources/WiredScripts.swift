@@ -159,8 +159,8 @@ enum WiredScripts {
         return .action(id: id, label: label) { status in
             let loginItem = LiveLoginItem()
             do {
-                try loginItem.setEnabled(true)
-                let enabled = loginItem.isEnabled()
+                try await loginItem.setEnabled(true)
+                let enabled = await loginItem.isEnabled()
                 status("Login item enabled: \(enabled). Check System Settings > General > Login Items.")
             } catch {
                 status("Failed to enable login item: \(error)")

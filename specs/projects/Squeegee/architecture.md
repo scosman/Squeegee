@@ -82,7 +82,7 @@ L4  App target        (depends AppShellUI, MenuBarUI, AppCore, SystemBridge, Per
 | Persistence | SwiftData schema (versioned), `Store` (@MainActor; main context), mapping between `@Model` objects and Engine values, FIFO history trimming. |
 | SystemBridge | Live ports: `CGWindowLister`, `AXWindowService` (actor), `FrontmostFocusObserver`, `LiveWorkspaceEvents`, `LiveAccessibilityPermission`, `LiveLoginItem`, `LiveInstalledAppScanner`, `LiveAppOpener`, `LiveAppTerminator`, `LiveAppScheduler`. See system_layer.md. |
 | AppCore | `@MainActor @Observable final class AppCore`: event pump, tracker state, replanning, executor, deadline timer, pause, permissions state, onboarding completion, dry run, reopen, route. See engine.md. |
-| SharedUI | `AppIconView` (icon by bundle ID, cached), `SuggestionListView` (onboarding step 3 + Settings sheet). |
+| SharedUI | `AppIconView` (icon by bundle ID; loaded and rendered off-main, cached), `SuggestionListView` (onboarding step 3 + Settings sheet). |
 | MenuBarUI | `StatusItemController`: owns `NSStatusItem`; `NSMenuDelegate.menuNeedsUpdate` asks `AppCore` for a `MenuContent` and renders it with `MenuRenderer`. |
 | OnboardingUI | `OnboardingScaffold`, `ProgressHeader`, `BrandFooter`, step views, `OnboardingViewModel`. |
 | SettingsUI | `SettingsRootView` (`NavigationSplitView`), sidebar, General page, Rule page, Open Windows list, add-app menu, Suggestions sheet, view models. |

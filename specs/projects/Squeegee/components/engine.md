@@ -267,8 +267,8 @@ public func pause(_ option: PauseOption)
 public func resume()
 public func requestAccessibility()
 public func openAccessibilitySettings()
-public func setLaunchAtLogin(_ enabled: Bool) throws
-public var launchAtLogin: Bool { get }
+public func setLaunchAtLogin(_ enabled: Bool) async throws   // shows the new value at once, then the system's state
+public private(set) var launchAtLogin: Bool                  // cached; refreshed off-main at start, on own-app activation, after set
 
 public func open(_ selection: SettingsSelection)     // sets route (if onboarding is complete) + showMainWindow()
 public func schedules(for selection: SettingsSelection) -> [WindowSchedule]  // Open Windows list (rule page)
@@ -416,7 +416,7 @@ Tracked window state (opened time, last-active time, close state) lives in memor
 `menuContent()` calls `MenuContentBuilder.build(input)` (Presentation) with:
 - the plan's schedules with a status in `{scheduled, dueInUse, duePaused, dueUnreachable, closing}`;
 - `recentClosures(limit: 8)`;
-- `fileExists` (from `ports.opener`) for each closure URL;
+- the cached file-existence result for each closure URL. `menuContent()` never touches the file system: it reads a cache and starts an off-main refresh (`ports.opener.fileExists`) for the next open. A URL not checked yet counts as present. `start()` fills the cache;
 - `isPaused`, `pausedUntil`, `permission`, and `now`.
 
 The builder returns `MenuContent` (a value tree of sections and items, with a `MenuAction` enum for each item). `MenuRenderer` (MenuBarUI) maps each `MenuAction` to an `AppCore` call.

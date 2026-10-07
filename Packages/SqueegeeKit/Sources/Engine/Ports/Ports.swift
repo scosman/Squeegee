@@ -54,9 +54,10 @@ public protocol AccessibilityPermissionPort: Sendable {
 }
 
 /// Controls the Launch at Login state via ServiceManagement.
+/// Both calls are XPC round trips; implementations run them off the main thread.
 public protocol LoginItemPort: Sendable {
-    func isEnabled() -> Bool
-    func setEnabled(_ enabled: Bool) throws
+    func isEnabled() async -> Bool
+    func setEnabled(_ enabled: Bool) async throws
 }
 
 /// Scans the file system for installed applications.
@@ -69,7 +70,8 @@ public protocol AppOpening: Sendable {
     func open(documentURL: URL, withBundleID: String) async throws
     /// Activates the app if running, or launches it.
     func launch(bundleID: String) async throws
-    func fileExists(_ url: URL) -> Bool
+    /// Can block on slow or network volumes; implementations run it off the main thread.
+    func fileExists(_ url: URL) async -> Bool
 }
 
 /// Resolves the folder URL shown in a Finder window, given the window title.

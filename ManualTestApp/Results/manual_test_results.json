@@ -3,7 +3,7 @@
     "note" : "Bridge available: true, macOS Version 15.6.1 (Build 24G90)",
     "status" : "pass",
     "stepID" : "sb_bridge_available",
-    "timestamp" : "2026-09-30T02:10:31Z"
+    "timestamp" : "2026-10-07T02:05:45Z"
   },
   "sb_close_fullscreen" : {
     "note" : "both close",
@@ -88,27 +88,27 @@
   "sb_focus_app_switch" : {
     "status" : "pass",
     "stepID" : "sb_focus_app_switch",
-    "timestamp" : "2026-09-30T02:24:31Z"
+    "timestamp" : "2026-10-07T02:07:58Z"
   },
   "sb_focus_events" : {
     "status" : "pass",
     "stepID" : "sb_focus_events",
-    "timestamp" : "2026-09-30T02:26:35Z"
+    "timestamp" : "2026-10-07T02:07:45Z"
   },
   "sb_focus_launching_app" : {
     "status" : "pass",
     "stepID" : "sb_focus_launching_app",
-    "timestamp" : "2026-09-30T02:25:52Z"
+    "timestamp" : "2026-10-07T02:08:59Z"
   },
   "sb_focus_new_window" : {
     "status" : "pass",
     "stepID" : "sb_focus_new_window",
-    "timestamp" : "2026-09-30T02:25:16Z"
+    "timestamp" : "2026-10-07T02:08:09Z"
   },
   "sb_focus_sleep" : {
     "status" : "pass",
     "stepID" : "sb_focus_sleep",
-    "timestamp" : "2026-09-30T02:26:30Z"
+    "timestamp" : "2026-10-07T02:10:59Z"
   },
   "sb_installed_apps" : {
     "status" : "pass",
@@ -124,12 +124,12 @@
   "sb_login_item" : {
     "status" : "pass",
     "stepID" : "sb_login_item",
-    "timestamp" : "2026-10-02T21:27:49Z"
+    "timestamp" : "2026-10-07T02:11:18Z"
   },
   "sb_login_item_action" : {
     "status" : "pass",
     "stepID" : "sb_login_item_action",
-    "timestamp" : "2026-10-02T21:27:23Z"
+    "timestamp" : "2026-10-07T02:11:09Z"
   },
   "sb_permission_notification" : {
     "status" : "pass",
@@ -144,7 +144,7 @@
   "sb_permission_prompt_action" : {
     "status" : "pass",
     "stepID" : "sb_permission_prompt_action",
-    "timestamp" : "2026-09-30T02:10:35Z"
+    "timestamp" : "2026-10-07T02:06:42Z"
   },
   "sb_permission_revoke" : {
     "status" : "pass",

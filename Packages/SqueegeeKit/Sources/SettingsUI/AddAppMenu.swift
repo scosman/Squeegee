@@ -65,10 +65,10 @@ struct AddAppMenu: NSViewRepresentable {
                     let item = NSMenuItem(title: app.name, action: #selector(addRunningApp(_:)), keyEquivalent: "")
                     item.target = self
                     item.representedObject = app
-                    if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) {
-                        let icon = NSWorkspace.shared.icon(forFile: url.path)
-                        icon.size = NSSize(width: 16, height: 16)
-                        item.image = icon
+                    // Icons load off the main thread; an open menu shows them when ready.
+                    let bundleID = app.bundleID
+                    Task {
+                        item.image = await AppIconView.icon(for: bundleID, pointSize: 16)
                     }
                     submenu.addItem(item)
                 }
