@@ -17,6 +17,9 @@ struct SubtitledPopUpButton: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSPopUpButton {
         let popup = NSPopUpButton(frame: .zero, pullsDown: false)
+        popup.alignment = .right
+        popup.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        popup.setContentCompressionResistancePriority(.required, for: .horizontal)
         popup.target = context.coordinator
         popup.action = #selector(Coordinator.selectionChanged(_:))
         rebuildItems(popup)

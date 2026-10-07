@@ -94,20 +94,23 @@ private struct AppRulePageContent: View {
     @State private var showRemoveConfirmation = false
 
     var body: some View {
-        Form {
-            PermissionBanner(core: core)
+        VStack(spacing: 0) {
+            Form {
+                PermissionBanner(core: core)
 
-            headerSection
-            enabledSection
-            closeAfterSection
-            measureFromSection
-            if bundleID != "com.apple.finder" {
-                quitPolicySection
+                headerSection
+                enabledSection
+                closeAfterSection
+                measureFromSection
+                if bundleID != "com.apple.finder" {
+                    quitPolicySection
+                }
+                OpenWindowsList(core: core, selection: .appRule(bundleID: bundleID))
             }
-            OpenWindowsList(core: core, selection: .appRule(bundleID: bundleID))
-            removeSection
+            .formStyle(.grouped)
+
+            removeButton
         }
-        .formStyle(.grouped)
         // Notify the Store when any app-rule property changes so that the
         // ruleVersion counter bumps and AppCore's withObservationTracking
         // reliably fires its onChange (see Store.notifyRuleChanged() doc).
@@ -167,12 +170,16 @@ private struct AppRulePageContent: View {
         QuitPolicySection(rawValue: $record.quitPolicyRaw, isEnabled: record.isEnabled)
     }
 
-    private var removeSection: some View {
-        Section {
-            Button("Remove Rule", role: .destructive) {
+    private var removeButton: some View {
+        HStack {
+            Spacer()
+            Button("Remove Rule\u{2026}") {
                 showRemoveConfirmation = true
             }
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 4)
+        .padding(.bottom, 8)
     }
 }
 
@@ -250,10 +257,9 @@ private struct CloseAfterSection: View {
         let minutes = (clamped % 3600) / 60
         let lower = Int(Rule.closeAfterRange.lowerBound)
         let upper = Int(Rule.closeAfterRange.upperBound)
-        return HStack {
-            Text("Duration")
-            Spacer()
-            Stepper(hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m") {
+        let label = hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
+        return LabeledContent("Duration") {
+            Stepper(label) {
                 // Increment: jump from 1 min to 5 min; otherwise 5-min steps.
                 if clamped < 300 {
                     seconds = DurationClamping.clamp(300)
@@ -299,7 +305,7 @@ private struct MeasureFromSection: View {
                     options: Self.options,
                     isEnabled: isEnabled
                 )
-                .frame(width: 200)
+                .fixedSize()
             }
         }
     }
@@ -337,7 +343,7 @@ private struct QuitPolicySection: View {
                     options: Self.options,
                     isEnabled: isEnabled
                 )
-                .frame(width: 260)
+                .fixedSize()
             }
         }
     }

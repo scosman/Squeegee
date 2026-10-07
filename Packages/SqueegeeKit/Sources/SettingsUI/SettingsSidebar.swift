@@ -106,10 +106,20 @@ struct SettingsSidebar: View {
 
     // MARK: - Bottom bar
 
+    /// Whether the current selection is a removable app rule.
+    private var canRemoveSelection: Bool {
+        guard let sel = selection, case .appRule = sel else { return false }
+        return true
+    }
+
     private var bottomBar: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             AddAppMenu(core: core, showSuggestions: $showSuggestions)
                 .frame(width: 24, height: 20)
+            RemoveRuleButton(isEnabled: canRemoveSelection) {
+                requestRemovalConfirmation()
+            }
+            .frame(width: 24, height: 20)
             Spacer()
         }
         .padding(.horizontal, 8)
