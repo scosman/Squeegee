@@ -258,27 +258,31 @@ private struct CloseAfterSection: View {
         let lower = Int(Rule.closeAfterRange.lowerBound)
         let upper = Int(Rule.closeAfterRange.upperBound)
         let label = hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
-        return LabeledContent("Duration") {
-            HStack {
-                Spacer()
-                Stepper(label) {
-                    // Increment: jump from 1 min to 5 min; otherwise 5-min steps.
-                    if clamped < 300 {
-                        seconds = DurationClamping.clamp(300)
-                    } else {
-                        seconds = DurationClamping.clamp(min(clamped + 300, upper))
-                    }
-                } onDecrement: {
-                    // Decrement: jump from 5 min to 1 min; otherwise 5-min steps.
-                    if clamped <= 300 {
-                        seconds = DurationClamping.clamp(lower)
-                    } else {
-                        seconds = DurationClamping.clamp(max(clamped - 300, 300))
-                    }
+        // Layout: "Duration" …space… value text, stepper arrows.
+        // The Stepper's own label is hidden so the arrows stay at the
+        // fixed trailing edge and do not shift when the value width changes.
+        return HStack {
+            Text("Duration")
+            Spacer()
+            Text(label)
+            Stepper(label, onIncrement: {
+                // Increment: jump from 1 min to 5 min; otherwise 5-min steps.
+                if clamped < 300 {
+                    seconds = DurationClamping.clamp(300)
+                } else {
+                    seconds = DurationClamping.clamp(min(clamped + 300, upper))
                 }
-                .fixedSize()
-                .disabled(!isEnabled)
-            }
+            }, onDecrement: {
+                // Decrement: jump from 5 min to 1 min; otherwise 5-min steps.
+                if clamped <= 300 {
+                    seconds = DurationClamping.clamp(lower)
+                } else {
+                    seconds = DurationClamping.clamp(max(clamped - 300, 300))
+                }
+            })
+            .labelsHidden()
+            .fixedSize()
+            .disabled(!isEnabled)
         }
     }
 }
